@@ -1,0 +1,12 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    queries: "sqlc/query.sql"
+    schema: "sqlc/schema.sql"
+    gen:
+      go:
+        package: "sqlc" # Package name
+        out: "internal/auth/sqlc" # Output folder
+        sql_package: "pgx/v5" # database driver to generate code for.
+        emit_json_tags: true
+        emit_db_tags: true 
