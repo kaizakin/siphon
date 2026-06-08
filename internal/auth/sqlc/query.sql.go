@@ -11,6 +11,47 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const createRefreshToken = `-- name: CreateRefreshToken :one
+INSERT INTO refresh_tokens (
+    id,
+    user_id,
+    token,
+    expires_at
+)
+VALUES (
+    $1,
+    $2,
+    $3,
+    $4
+)
+RETURNING id, user_id, token, expires_at, created_at
+`
+
+type CreateRefreshTokenParams struct {
+	ID        pgtype.UUID `db:"id" json:"id"`
+	UserID    pgtype.UUID `db:"user_id" json:"user_id"`
+	Token     string      `db:"token" json:"token"`
+	ExpiresAt interface{} `db:"expires_at" json:"expires_at"`
+}
+
+func (q *Queries) CreateRefreshToken(ctx context.Context, arg CreateRefreshTokenParams) (RefreshToken, error) {
+	row := q.db.QueryRow(ctx, createRefreshToken,
+		arg.ID,
+		arg.UserID,
+		arg.Token,
+		arg.ExpiresAt,
+	)
+	var i RefreshToken
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Token,
+		&i.ExpiresAt,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (
     id,
@@ -33,6 +74,55 @@ type CreateUserParams struct {
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
 	row := q.db.QueryRow(ctx, createUser, arg.ID, arg.Email, arg.PasswordHash)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.PasswordHash,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const deleteRefreshToken = `-- name: DeleteRefreshToken :exec
+DELETE from refresh_tokens
+WHERE token = $1
+`
+
+func (q *Queries) DeleteRefreshToken(ctx context.Context, token string) error {
+	_, err := q.db.Exec(ctx, deleteRefreshToken, token)
+	return err
+}
+
+const getRefreshToken = `-- name: GetRefreshToken :one
+SELECT id, user_id, token, expires_at, created_at FROM refresh_tokens
+WHERE token = $1
+LIMIT 1
+`
+
+func (q *Queries) GetRefreshToken(ctx context.Context, token string) (RefreshToken, error) {
+	row := q.db.QueryRow(ctx, getRefreshToken, token)
+	var i RefreshToken
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Token,
+		&i.ExpiresAt,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const getUserByEmail = `-- name: GetUserByEmail :one
+SELECT id, email, password_hash, created_at, updated_at FROM users
+WHERE
+email = $1
+LIMIT 1
+`
+
+func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
+	row := q.db.QueryRow(ctx, getUserByEmail, email)
 	var i User
 	err := row.Scan(
 		&i.ID,
