@@ -1,20 +1,17 @@
 package main
 
 import (
+	"log"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	"github.com/kaizakin/siphon/internal/gateway/routes"
+	"github.com/kaizakin/siphon/pkg/config"
 )
 
 func main() {
-	r := chi.NewRouter()
-	
-	r.Use(middleware.Logger)
+	cfg := config.Load()
 
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hello world"))
-	})
+	r := routes.SetupRouter()
 
-	http.ListenAndServe(":3000", r)
+	log.Fatal(http.ListenAndServe(":" + cfg.Port, r))
 }
