@@ -21,10 +21,15 @@ type Handler struct {
 	queries *db.Queries
 }
 
-type createUserResponse struct {
+type RegisterAndLoginResponse struct {
 	Message string 			`json:"message"`
 	AccessToken string 		`json:"access_token"`
 	RefreshToken string 	`json:"refresh_token"`
+}
+
+type loginRequest struct {
+	Email string 		`json:"email"`
+	Password string 	`json:"password"`
 }
 
 func NewHandler(queries *db.Queries) *Handler {
@@ -75,17 +80,11 @@ func (h *Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		},
 	)
 
-	refreshToken := uuid.NewString()
-	expiresAt := time.Now().Add(30 * 24 * time.Hour) // 30 days
-
-	_, err = h.queries.CreateRefreshToken(
-		context.Background(),
-		db.CreateRefreshTokenParams{
-			UserID: user.ID,
-			Token: refreshToken,
-			ExpiresAt: expiresAt,
-		},
-	)
+	refreshToken, err := generateRefreshToken(h, user)
+	if err != nil {
+		http.Error(w, "Failed to generate refresh token", http.StatusInternalServerError)
+		return
+	}
 
 	accessToken, err := generateJWT(user.ID.String())
 	if err != nil {
@@ -93,7 +92,7 @@ func (h *Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := createUserResponse{
+	response := RegisterAndLoginResponse{
 		Message: "User created successfully",
 		RefreshToken: refreshToken,
 		AccessToken: accessToken,
@@ -104,6 +103,26 @@ func (h *Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(response)
 	return
+}
+
+func generateRefreshToken(h *Handler, user db.User) (string, error) {
+	refreshToken := uuid.NewString()
+	expiresAt := time.Now().Add(30 * 24 * time.Hour) // 30 days
+
+	_, err := h.queries.CreateRefreshToken(
+		context.Background(),
+		db.CreateRefreshTokenParams{
+			UserID: user.ID,
+			Token: refreshToken,
+			ExpiresAt: expiresAt,
+		},
+	)
+
+	if err != nil {
+		return "", err
+	}
+
+	return refreshToken, nil
 }
 
 func generateJWT(userID string) (string, error) {
@@ -117,3 +136,45 @@ func generateJWT(userID string) (string, error) {
 
 	return token.SignedString(jwtsecret)
 } 
+
+func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
+	var req loginRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+	}
+
+	user, err := h.queries.GetUserByEmail(context.Background(), req.Email)
+	if err != nil {
+		http.Error(w, "User not found!", http.StatusUnauthorized)
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password))
+	if err != nil {
+		http.Error(w, "Invalid password", http.StatusUnauthorized)
+	}
+
+	refreshToken, err := generateRefreshToken(h, user)
+	if err != nil {
+		http.Error(w, "Failed to generate refresh token", http.StatusInternalServerError)
+		return
+	}
+
+	accessToken, err := generateJWT(user.ID.String())
+	if err != nil {
+		http.Error(w, "failed to generate access token", http.StatusInternalServerError)
+		return
+	}
+
+	response := RegisterAndLoginResponse{
+		Message: "User successfully logged in!",
+		RefreshToken: refreshToken,
+		AccessToken: accessToken,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusAccepted)
+
+	json.NewEncoder(w).Encode(response)
+	return
+}
