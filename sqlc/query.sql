@@ -19,7 +19,6 @@ LIMIT 1;
 
 -- name: CreateRefreshToken :one
 INSERT INTO refresh_tokens (
-    id,
     user_id,
     token,
     expires_at
@@ -27,8 +26,7 @@ INSERT INTO refresh_tokens (
 VALUES (
     $1,
     $2,
-    $3,
-    $4
+    $3
 )
 RETURNING *;
 
