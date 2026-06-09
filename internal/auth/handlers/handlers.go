@@ -1,24 +1,30 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
-	"context"
+	"time"
 
-	"golang.org/x/crypto/bcrypt"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+	"golang.org/x/crypto/bcrypt"
+	"github.com/golang-jwt/jwt/v5"
 
 	db "github.com/kaizakin/siphon/internal/auth/sqlc"
+	"github.com/kaizakin/siphon/pkg/config"
 )
+
+var jwtsecret = []byte(config.Load().JwtSecret)
 
 type Handler struct {
 	queries *db.Queries
 }
 
 type createUserResponse struct {
-	Message string `json:"message"`
-	UserID string `json:"user_id"`
+	Message string 			`json:"message"`
+	AccessToken string 		`json:"access_token"`
+	RefreshToken string 	`json:"refresh_token"`
 }
 
 func NewHandler(queries *db.Queries) *Handler {
@@ -60,7 +66,7 @@ func (h *Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		Valid: true,
 	}
 
-	_, err = h.queries.CreateUser(
+	user, err := h.queries.CreateUser(
 		context.Background(), 
 		db.CreateUserParams{
 			ID: id,
@@ -69,13 +75,45 @@ func (h *Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		},
 	)
 
+	refreshToken := uuid.NewString()
+	expiresAt := time.Now().Add(30 * 24 * time.Hour) // 30 days
+
+	_, err = h.queries.CreateRefreshToken(
+		context.Background(),
+		db.CreateRefreshTokenParams{
+			UserID: user.ID,
+			Token: refreshToken,
+			ExpiresAt: expiresAt,
+		},
+	)
+
+	accessToken, err := generateJWT(user.ID.String())
+	if err != nil {
+		http.Error(w, "failed to generate access token", http.StatusInternalServerError)
+		return
+	}
+
 	response := createUserResponse{
 		Message: "User created successfully",
-		UserID: id.String(),
+		RefreshToken: refreshToken,
+		AccessToken: accessToken,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 
 	json.NewEncoder(w).Encode(response)
+	return
 }
+
+func generateJWT(userID string) (string, error) {
+	token := jwt.NewWithClaims(
+		jwt.SigningMethodHS256,
+		jwt.MapClaims{
+			"sub": userID,
+			"exp": time.Now().Add(24 * time.Hour).Unix(), // 24 Hours of expiry time.
+		},
+	)
+
+	return token.SignedString(jwtsecret)
+} 
