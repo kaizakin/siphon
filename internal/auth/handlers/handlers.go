@@ -16,6 +16,11 @@ type Handler struct {
 	queries *db.Queries
 }
 
+type createUserResponse struct {
+	Message string `json:"message"`
+	UserID string `json:"user_id"`
+}
+
 func NewHandler(queries *db.Queries) *Handler {
 	return &Handler{
 		queries: queries,
@@ -63,4 +68,14 @@ func (h *Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 			PasswordHash: string(hash),
 		},
 	)
+
+	response := createUserResponse{
+		Message: "User created successfully",
+		UserID: id.String(),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+
+	json.NewEncoder(w).Encode(response)
 }
