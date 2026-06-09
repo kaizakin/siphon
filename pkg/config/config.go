@@ -27,5 +27,6 @@ func Load() Config {
 	return Config{
 		Port: port,
 		DB_URL: dbUrl,
+		JwtSecret: jwtsecret,
 	}
 }
