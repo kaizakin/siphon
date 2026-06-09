@@ -9,17 +9,17 @@ import (
 )
 
 type RefreshToken struct {
-	ID        pgtype.UUID `db:"id" json:"id"`
-	UserID    pgtype.UUID `db:"user_id" json:"user_id"`
-	Token     string      `db:"token" json:"token"`
-	ExpiresAt interface{} `db:"expires_at" json:"expires_at"`
-	CreatedAt interface{} `db:"created_at" json:"created_at"`
+	ID        pgtype.UUID        `db:"id" json:"id"`
+	UserID    pgtype.UUID        `db:"user_id" json:"user_id"`
+	Token     string             `db:"token" json:"token"`
+	ExpiresAt pgtype.Timestamptz `db:"expires_at" json:"expires_at"`
+	CreatedAt pgtype.Timestamptz `db:"created_at" json:"created_at"`
 }
 
 type User struct {
-	ID           pgtype.UUID `db:"id" json:"id"`
-	Email        string      `db:"email" json:"email"`
-	PasswordHash string      `db:"password_hash" json:"password_hash"`
-	CreatedAt    interface{} `db:"created_at" json:"created_at"`
-	UpdatedAt    interface{} `db:"updated_at" json:"updated_at"`
+	ID           pgtype.UUID        `db:"id" json:"id"`
+	Email        string             `db:"email" json:"email"`
+	PasswordHash string             `db:"password_hash" json:"password_hash"`
+	CreatedAt    pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
 }
