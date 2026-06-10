@@ -33,6 +33,7 @@ func main() {
 
 	router := routes.SetupRouter(handler)
 
+	log.Printf("Starting Auth server on port %s\n", cfg.Port)
 	err = http.ListenAndServe(":" + cfg.Port, router)
 	if err != nil {
 		log.Fatal(err)
