@@ -15,8 +15,6 @@ import (
 	"github.com/kaizakin/siphon/pkg/config"
 )
 
-var jwtsecret = []byte(config.Load().JwtSecret)
-
 type Handler struct {
 	queries *db.Queries
 }
@@ -135,6 +133,7 @@ func generateJWT(userID string) (string, error) {
 			"exp": time.Now().Add(24 * time.Hour).Unix(), // 24 Hours of expiry time.
 		},
 	)
+	var jwtsecret = []byte(config.Load().JwtSecret)
 
 	return token.SignedString(jwtsecret)
 }
