@@ -5,6 +5,9 @@ version: '3'
 vars:
   GREETING: Hello, world!
 
+dotenv:
+  - .env
+
 tasks:
   default:
     desc: Print a greeting message
@@ -17,3 +20,8 @@ tasks:
     cmds:
       - go run cmd/auth-svc/main.go
     silent: true
+
+  db:migrate:
+    desc: Run Database migrations
+    cmds:
+      - goose -dir migrations postgres "$DATABASE_URL" up

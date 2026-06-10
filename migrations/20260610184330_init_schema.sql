@@ -1,3 +1,4 @@
+-- +goose Up
 CREATE TABLE users (
     id UUID PRIMARY KEY,
     email TEXT NOT NULL UNIQUE,
@@ -13,3 +14,7 @@ CREATE TABLE refresh_tokens (
     expires_at TIMESTAMPTZ NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- +goose Down
+DROP TABLE users;
+DROP TABLE refresh_tokens;
