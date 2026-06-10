@@ -11,6 +11,8 @@ func SetupRouter(h *handlers.Handler) *chi.Mux {
 
 	r.Route("/api/v1/auth", func(r chi.Router) {
 		r.Post("/register", h.RegisterHandler)
+		r.Post("/login", h.LoginHandler)
+		r.Post("/refresh", h.RefreshHandler)
 	})
 
 	return r

@@ -19,17 +19,6 @@ type Handler struct {
 	queries *db.Queries
 }
 
-type RegisterAndLoginResponse struct {
-	Message      string `json:"message"`
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
-}
-
-type loginRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
-
 func NewHandler(queries *db.Queries) *Handler {
 	return &Handler{
 		queries: queries,
@@ -177,10 +166,6 @@ func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 
 	json.NewEncoder(w).Encode(response)
-}
-
-type RefreshRequest struct {
-	RefreshToken string `json:"refresh_token"`
 }
 
 func (h *Handler) RefreshHandler(w http.ResponseWriter, r *http.Request) {
