@@ -122,7 +122,7 @@ func generateJWT(userID string) (string, error) {
 			"exp": time.Now().Add(24 * time.Hour).Unix(), // 24 Hours of expiry time.
 		},
 	)
-	var jwtsecret = []byte(config.Load().JwtSecret)
+	var jwtsecret = []byte(config.Getenv("JWT_SECRET"))
 
 	return token.SignedString(jwtsecret)
 }

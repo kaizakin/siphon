@@ -13,13 +13,24 @@ import (
 	"github.com/kaizakin/siphon/internal/auth/sqlc"
 	"github.com/kaizakin/siphon/pkg/config"
 )
+
+type Config struct {
+	Port string
+	DB_URL string
+	Jwt_secret string
+}
+
 func main() {
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error reading .env file")
 	}
 
-	cfg := config.Load()
+	cfg := Config{
+		Port: config.Getenv("PORT"),
+		DB_URL: config.Getenv("DB_URL"),
+		Jwt_secret: config.Getenv("JWT_SECRET"),
+	}
 
 	pool, err := pgxpool.New(context.Background(), cfg.DB_URL)
 	if err != nil {
