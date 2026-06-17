@@ -13,6 +13,7 @@ import (
 
 	db "github.com/kaizakin/siphon/internal/auth/sqlc"
 	"github.com/kaizakin/siphon/pkg/config"
+	"github.com/kaizakin/siphon/pkg/dto"
 )
 
 type Handler struct {
@@ -26,7 +27,7 @@ func NewHandler(queries *db.Queries) *Handler {
 }
 
 func (h *Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
-	var req RegisterRequest
+	var req dto.RegisterRequest
 
 	err := json.NewDecoder(r.Body).Decode(&req)
 
@@ -79,7 +80,7 @@ func (h *Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := RegisterAndLoginResponse{
+	response := dto.RegisterAndLoginResponse{
 		Message:      "User created successfully",
 		RefreshToken: refreshToken,
 		AccessToken:  accessToken,
@@ -128,7 +129,7 @@ func generateJWT(userID string) (string, error) {
 }
 
 func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
-	var req loginRequest
+	var req dto.LoginRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
@@ -156,7 +157,7 @@ func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := RegisterAndLoginResponse{
+	response := dto.RegisterAndLoginResponse{
 		Message:      "User successfully logged in!",
 		RefreshToken: refreshToken,
 		AccessToken:  accessToken,
@@ -169,7 +170,7 @@ func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) RefreshHandler(w http.ResponseWriter, r *http.Request) {
-	var req RefreshRequest
+	var req dto.RefreshRequest
 
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
@@ -193,7 +194,7 @@ func (h *Handler) RefreshHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "failed to generate access token", http.StatusInternalServerError)
 		}
 		
-		response := RegisterAndLoginResponse{
+		response := dto.RegisterAndLoginResponse{
 			Message:      "refreshtoken created successfully",
 			RefreshToken: refreshToken,
 			AccessToken:  accessToken,
