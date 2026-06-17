@@ -26,7 +26,7 @@ func main() {
 		Auth_svc_url: config.Getenv("AUTH_SVC_URL"),
 	}
 
-	r := routes.SetupRouter()
+	r := routes.SetupRouter(cfg.Auth_svc_url)
 
 	log.Fatal(http.ListenAndServe(":" + cfg.Port, r))
 }
