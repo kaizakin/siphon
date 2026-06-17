@@ -28,5 +28,6 @@ func main() {
 
 	r := routes.SetupRouter(cfg.Auth_svc_url)
 
+	log.Printf("Starting Auth server on port %s\n", cfg.Port)
 	log.Fatal(http.ListenAndServe(":" + cfg.Port, r))
 }

@@ -28,7 +28,7 @@ func main() {
 
 	cfg := Config{
 		Port: config.Getenv("PORT"),
-		DB_URL: config.Getenv("DB_URL"),
+		DB_URL: config.Getenv("DATABASE_URL"),
 		Jwt_secret: config.Getenv("JWT_SECRET"),
 	}
 

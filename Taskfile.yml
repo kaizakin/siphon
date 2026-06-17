@@ -5,9 +5,6 @@ version: '3'
 vars:
   GREETING: Hello, world!
 
-dotenv:
-  - .env
-
 tasks:
   default:
     desc: Print a greeting message
@@ -17,11 +14,27 @@ tasks:
 
   run:auth:
     desc: Run the auth service
+    dir: cmd/auth-svc
+    dotenv:
+      - .env
     cmds:
-      - go run cmd/auth-svc/main.go
+      - |
+        echo "Starting the auth service"
+        PORT=8080 go run main.go
     silent: true
 
   db:migrate:
     desc: Run Database migrations
     cmds:
       - goose -dir migrations postgres "$DATABASE_URL" up
+
+  run:gateway:
+    desc: Run the API gateway
+    dir: cmd/api-gateway
+    dotenv:
+      - .env
+    cmds:
+      - |
+        echo "starting the API gateway"
+        PORT=3000 go run main.go 
+    silent: true
