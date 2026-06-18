@@ -38,3 +38,14 @@ tasks:
         echo "starting the API gateway"
         PORT=3000 go run main.go 
     silent: true
+
+  protoc:
+    desc: generate stubs from proto definition
+    cmds:
+      - |
+        protoc --go_out=gen \
+        --go_opt=paths=source_relative \
+        --go-grpc_out=gen \
+        --go-grpc_opt=paths=source_relative \
+        proto/ingestion/ingestion.proto
+    silent: true
