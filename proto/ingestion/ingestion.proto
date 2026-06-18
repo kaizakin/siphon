@@ -1,0 +1,77 @@
+syntax = "proto3";
+
+package ingestion.v1;
+
+import "google/protobuf/struct.proto";
+
+option go_package = "github.com/kaizakin/siphon/gen/proto/ingestion/v1";
+
+message IngestEventRequest {
+    string event_id = 1; // each event gets its own unique id
+    string event_type = 2;
+    string source = 3;
+    string version = 4;
+    string timestamp = 5;
+    string correlation_id = 6;// track a single request throughout multiple services
+  
+    map<string, string> metadata = 7;// any metadata can be attached
+  
+    google.protobuf.Struct payload = 8;  // arbitrary json payload, dynamic
+}
+
+service EventIngestionService {
+    rpc IngestEvent(IngestEventRequest)
+        returns (IngestEventResponse);
+
+    rpc ListDLQEvents(ListDLQEventsRequest)
+        returns (ListDLQEventsResponse);
+
+    rpc RetryDLQEvent(RetryDLQEventRequest)
+        returns (RetryDLQEventResponse);
+}
+
+message IngestEventResponse { 
+    string event_id = 1;
+    string status = 2;
+}
+
+message ListDLQEventsRequest {
+  int32 page = 1;
+  int32 limit = 2;
+}
+
+message DLQEvent {
+  string event_id = 1;
+  string correlation_id = 2;
+
+  string event_type = 3;
+  string source = 4; // who created the event
+  string version = 5;
+
+  google.protobuf.Struct payload = 6;
+
+  string failure_reason = 7; // why the request failed
+
+  int32 retry_count = 8;
+
+  string failed_at = 9; // timestamp of request failure
+}
+
+message ListDLQEventsResponse {
+  repeated DLQEvent events = 1;
+
+  int32 page = 2;
+  int32 limit = 3;
+
+  int64 total_count = 4; // total no of failed events
+}
+
+message RetryDLQEventRequest {
+  string event_id = 1;
+}
+
+message RetryDLQEventResponse {
+  DLQEvent event = 1;
+  string status = 2;
+  string message = 3;
+}
