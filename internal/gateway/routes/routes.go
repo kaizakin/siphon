@@ -5,10 +5,10 @@ import (
 	"net/url"
 
 	"github.com/go-chi/chi/v5"
-	// h "github.com/kaizakin/siphon/internal/gateway/handlers"
+	"github.com/kaizakin/siphon/internal/gateway/handlers"
 )
 
-func SetupRouter(auth_url string) *chi.Mux {
+func SetupRouter(auth_url string, handler *handlers.IngestionHandler) *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Route("/api/v1/", func(r chi.Router) {
@@ -21,7 +21,7 @@ func SetupRouter(auth_url string) *chi.Mux {
 		r.Handle("/auth/*", authProxy)
 		
 		// event ingestion service
-		// r.Post("/event")
+		r.Post("/event", handler.CreateEvent)
 
 		// dead letter queue (event ingestion)
 		// r.Get("/dlq/events")
