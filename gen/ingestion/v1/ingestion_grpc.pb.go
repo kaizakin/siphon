@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.2
 // - protoc             v7.34.1
-// source: proto/ingestion/ingestion.proto
+// source: ingestion/v1/ingestion.proto
 
 package v1
 
@@ -193,5 +193,5 @@ var EventIngestionService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/ingestion/ingestion.proto",
+	Metadata: "ingestion/v1/ingestion.proto",
 }

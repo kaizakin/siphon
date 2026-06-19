@@ -44,8 +44,9 @@ tasks:
     cmds:
       - |
         protoc --go_out=gen \
+        --proto_path=proto \
         --go_opt=paths=source_relative \
         --go-grpc_out=gen \
         --go-grpc_opt=paths=source_relative \
-        proto/ingestion/ingestion.proto
+        proto/ingestion/v1/ingestion.proto
     silent: true

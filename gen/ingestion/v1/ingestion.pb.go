@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v7.34.1
-// source: proto/ingestion/ingestion.proto
+// source: ingestion/v1/ingestion.proto
 
 package v1
 
@@ -22,10 +22,87 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type EventType int32
+
+const (
+	EventType_EVENT_TYPE_UNSPECIFIED EventType = 0
+	// User
+	EventType_EVENT_TYPE_USER_CREATED  EventType = 1
+	EventType_EVENT_TYPE_USER_VERIFIED EventType = 2
+	// Order
+	EventType_EVENT_TYPE_ORDER_CREATED   EventType = 3
+	EventType_EVENT_TYPE_ORDER_CANCELLED EventType = 4
+	EventType_EVENT_TYPE_ORDER_SHIPPED   EventType = 5
+	EventType_EVENT_TYPE_ORDER_DELIVERED EventType = 6
+	// Payment
+	EventType_EVENT_TYPE_PAYMENT_SUCCEEDED EventType = 7
+	EventType_EVENT_TYPE_PAYMENT_FAILED    EventType = 8
+	// Subscription
+	EventType_EVENT_TYPE_SUBSCRIPTION_STARTED EventType = 9
+	EventType_EVENT_TYPE_SUBSCRIPTION_EXPIRED EventType = 10
+)
+
+// Enum value maps for EventType.
+var (
+	EventType_name = map[int32]string{
+		0:  "EVENT_TYPE_UNSPECIFIED",
+		1:  "EVENT_TYPE_USER_CREATED",
+		2:  "EVENT_TYPE_USER_VERIFIED",
+		3:  "EVENT_TYPE_ORDER_CREATED",
+		4:  "EVENT_TYPE_ORDER_CANCELLED",
+		5:  "EVENT_TYPE_ORDER_SHIPPED",
+		6:  "EVENT_TYPE_ORDER_DELIVERED",
+		7:  "EVENT_TYPE_PAYMENT_SUCCEEDED",
+		8:  "EVENT_TYPE_PAYMENT_FAILED",
+		9:  "EVENT_TYPE_SUBSCRIPTION_STARTED",
+		10: "EVENT_TYPE_SUBSCRIPTION_EXPIRED",
+	}
+	EventType_value = map[string]int32{
+		"EVENT_TYPE_UNSPECIFIED":          0,
+		"EVENT_TYPE_USER_CREATED":         1,
+		"EVENT_TYPE_USER_VERIFIED":        2,
+		"EVENT_TYPE_ORDER_CREATED":        3,
+		"EVENT_TYPE_ORDER_CANCELLED":      4,
+		"EVENT_TYPE_ORDER_SHIPPED":        5,
+		"EVENT_TYPE_ORDER_DELIVERED":      6,
+		"EVENT_TYPE_PAYMENT_SUCCEEDED":    7,
+		"EVENT_TYPE_PAYMENT_FAILED":       8,
+		"EVENT_TYPE_SUBSCRIPTION_STARTED": 9,
+		"EVENT_TYPE_SUBSCRIPTION_EXPIRED": 10,
+	}
+)
+
+func (x EventType) Enum() *EventType {
+	p := new(EventType)
+	*p = x
+	return p
+}
+
+func (x EventType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (EventType) Descriptor() protoreflect.EnumDescriptor {
+	return file_ingestion_v1_ingestion_proto_enumTypes[0].Descriptor()
+}
+
+func (EventType) Type() protoreflect.EnumType {
+	return &file_ingestion_v1_ingestion_proto_enumTypes[0]
+}
+
+func (x EventType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use EventType.Descriptor instead.
+func (EventType) EnumDescriptor() ([]byte, []int) {
+	return file_ingestion_v1_ingestion_proto_rawDescGZIP(), []int{0}
+}
+
 type IngestEventRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	EventId       string                 `protobuf:"bytes,1,opt,name=event_id,json=eventId,proto3" json:"event_id,omitempty"` // each event gets its own unique id
-	EventType     string                 `protobuf:"bytes,2,opt,name=event_type,json=eventType,proto3" json:"event_type,omitempty"`
+	EventType     EventType              `protobuf:"varint,2,opt,name=event_type,json=eventType,proto3,enum=ingestion.v1.EventType" json:"event_type,omitempty"`
 	Source        string                 `protobuf:"bytes,3,opt,name=source,proto3" json:"source,omitempty"`
 	Version       string                 `protobuf:"bytes,4,opt,name=version,proto3" json:"version,omitempty"`
 	Timestamp     string                 `protobuf:"bytes,5,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
@@ -38,7 +115,7 @@ type IngestEventRequest struct {
 
 func (x *IngestEventRequest) Reset() {
 	*x = IngestEventRequest{}
-	mi := &file_proto_ingestion_ingestion_proto_msgTypes[0]
+	mi := &file_ingestion_v1_ingestion_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -50,7 +127,7 @@ func (x *IngestEventRequest) String() string {
 func (*IngestEventRequest) ProtoMessage() {}
 
 func (x *IngestEventRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_ingestion_ingestion_proto_msgTypes[0]
+	mi := &file_ingestion_v1_ingestion_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -63,7 +140,7 @@ func (x *IngestEventRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IngestEventRequest.ProtoReflect.Descriptor instead.
 func (*IngestEventRequest) Descriptor() ([]byte, []int) {
-	return file_proto_ingestion_ingestion_proto_rawDescGZIP(), []int{0}
+	return file_ingestion_v1_ingestion_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *IngestEventRequest) GetEventId() string {
@@ -73,11 +150,11 @@ func (x *IngestEventRequest) GetEventId() string {
 	return ""
 }
 
-func (x *IngestEventRequest) GetEventType() string {
+func (x *IngestEventRequest) GetEventType() EventType {
 	if x != nil {
 		return x.EventType
 	}
-	return ""
+	return EventType_EVENT_TYPE_UNSPECIFIED
 }
 
 func (x *IngestEventRequest) GetSource() string {
@@ -132,7 +209,7 @@ type IngestEventResponse struct {
 
 func (x *IngestEventResponse) Reset() {
 	*x = IngestEventResponse{}
-	mi := &file_proto_ingestion_ingestion_proto_msgTypes[1]
+	mi := &file_ingestion_v1_ingestion_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -144,7 +221,7 @@ func (x *IngestEventResponse) String() string {
 func (*IngestEventResponse) ProtoMessage() {}
 
 func (x *IngestEventResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_ingestion_ingestion_proto_msgTypes[1]
+	mi := &file_ingestion_v1_ingestion_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -157,7 +234,7 @@ func (x *IngestEventResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IngestEventResponse.ProtoReflect.Descriptor instead.
 func (*IngestEventResponse) Descriptor() ([]byte, []int) {
-	return file_proto_ingestion_ingestion_proto_rawDescGZIP(), []int{1}
+	return file_ingestion_v1_ingestion_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *IngestEventResponse) GetEventId() string {
@@ -184,7 +261,7 @@ type ListDLQEventsRequest struct {
 
 func (x *ListDLQEventsRequest) Reset() {
 	*x = ListDLQEventsRequest{}
-	mi := &file_proto_ingestion_ingestion_proto_msgTypes[2]
+	mi := &file_ingestion_v1_ingestion_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -196,7 +273,7 @@ func (x *ListDLQEventsRequest) String() string {
 func (*ListDLQEventsRequest) ProtoMessage() {}
 
 func (x *ListDLQEventsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_ingestion_ingestion_proto_msgTypes[2]
+	mi := &file_ingestion_v1_ingestion_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -209,7 +286,7 @@ func (x *ListDLQEventsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListDLQEventsRequest.ProtoReflect.Descriptor instead.
 func (*ListDLQEventsRequest) Descriptor() ([]byte, []int) {
-	return file_proto_ingestion_ingestion_proto_rawDescGZIP(), []int{2}
+	return file_ingestion_v1_ingestion_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *ListDLQEventsRequest) GetPage() int32 {
@@ -243,7 +320,7 @@ type DLQEvent struct {
 
 func (x *DLQEvent) Reset() {
 	*x = DLQEvent{}
-	mi := &file_proto_ingestion_ingestion_proto_msgTypes[3]
+	mi := &file_ingestion_v1_ingestion_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -255,7 +332,7 @@ func (x *DLQEvent) String() string {
 func (*DLQEvent) ProtoMessage() {}
 
 func (x *DLQEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_ingestion_ingestion_proto_msgTypes[3]
+	mi := &file_ingestion_v1_ingestion_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -268,7 +345,7 @@ func (x *DLQEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DLQEvent.ProtoReflect.Descriptor instead.
 func (*DLQEvent) Descriptor() ([]byte, []int) {
-	return file_proto_ingestion_ingestion_proto_rawDescGZIP(), []int{3}
+	return file_ingestion_v1_ingestion_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *DLQEvent) GetEventId() string {
@@ -346,7 +423,7 @@ type ListDLQEventsResponse struct {
 
 func (x *ListDLQEventsResponse) Reset() {
 	*x = ListDLQEventsResponse{}
-	mi := &file_proto_ingestion_ingestion_proto_msgTypes[4]
+	mi := &file_ingestion_v1_ingestion_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -358,7 +435,7 @@ func (x *ListDLQEventsResponse) String() string {
 func (*ListDLQEventsResponse) ProtoMessage() {}
 
 func (x *ListDLQEventsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_ingestion_ingestion_proto_msgTypes[4]
+	mi := &file_ingestion_v1_ingestion_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -371,7 +448,7 @@ func (x *ListDLQEventsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListDLQEventsResponse.ProtoReflect.Descriptor instead.
 func (*ListDLQEventsResponse) Descriptor() ([]byte, []int) {
-	return file_proto_ingestion_ingestion_proto_rawDescGZIP(), []int{4}
+	return file_ingestion_v1_ingestion_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ListDLQEventsResponse) GetEvents() []*DLQEvent {
@@ -411,7 +488,7 @@ type RetryDLQEventRequest struct {
 
 func (x *RetryDLQEventRequest) Reset() {
 	*x = RetryDLQEventRequest{}
-	mi := &file_proto_ingestion_ingestion_proto_msgTypes[5]
+	mi := &file_ingestion_v1_ingestion_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -423,7 +500,7 @@ func (x *RetryDLQEventRequest) String() string {
 func (*RetryDLQEventRequest) ProtoMessage() {}
 
 func (x *RetryDLQEventRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_ingestion_ingestion_proto_msgTypes[5]
+	mi := &file_ingestion_v1_ingestion_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -436,7 +513,7 @@ func (x *RetryDLQEventRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RetryDLQEventRequest.ProtoReflect.Descriptor instead.
 func (*RetryDLQEventRequest) Descriptor() ([]byte, []int) {
-	return file_proto_ingestion_ingestion_proto_rawDescGZIP(), []int{5}
+	return file_ingestion_v1_ingestion_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *RetryDLQEventRequest) GetEventId() string {
@@ -457,7 +534,7 @@ type RetryDLQEventResponse struct {
 
 func (x *RetryDLQEventResponse) Reset() {
 	*x = RetryDLQEventResponse{}
-	mi := &file_proto_ingestion_ingestion_proto_msgTypes[6]
+	mi := &file_ingestion_v1_ingestion_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -469,7 +546,7 @@ func (x *RetryDLQEventResponse) String() string {
 func (*RetryDLQEventResponse) ProtoMessage() {}
 
 func (x *RetryDLQEventResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_ingestion_ingestion_proto_msgTypes[6]
+	mi := &file_ingestion_v1_ingestion_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -482,7 +559,7 @@ func (x *RetryDLQEventResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RetryDLQEventResponse.ProtoReflect.Descriptor instead.
 func (*RetryDLQEventResponse) Descriptor() ([]byte, []int) {
-	return file_proto_ingestion_ingestion_proto_rawDescGZIP(), []int{6}
+	return file_ingestion_v1_ingestion_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *RetryDLQEventResponse) GetEvent() *DLQEvent {
@@ -506,15 +583,15 @@ func (x *RetryDLQEventResponse) GetMessage() string {
 	return ""
 }
 
-var File_proto_ingestion_ingestion_proto protoreflect.FileDescriptor
+var File_ingestion_v1_ingestion_proto protoreflect.FileDescriptor
 
-const file_proto_ingestion_ingestion_proto_rawDesc = "" +
+const file_ingestion_v1_ingestion_proto_rawDesc = "" +
 	"\n" +
-	"\x1fproto/ingestion/ingestion.proto\x12\fingestion.v1\x1a\x1cgoogle/protobuf/struct.proto\"\x81\x03\n" +
+	"\x1cingestion/v1/ingestion.proto\x12\fingestion.v1\x1a\x1cgoogle/protobuf/struct.proto\"\x9a\x03\n" +
 	"\x12IngestEventRequest\x12\x19\n" +
-	"\bevent_id\x18\x01 \x01(\tR\aeventId\x12\x1d\n" +
+	"\bevent_id\x18\x01 \x01(\tR\aeventId\x126\n" +
 	"\n" +
-	"event_type\x18\x02 \x01(\tR\teventType\x12\x16\n" +
+	"event_type\x18\x02 \x01(\x0e2\x17.ingestion.v1.EventTypeR\teventType\x12\x16\n" +
 	"\x06source\x18\x03 \x01(\tR\x06source\x12\x18\n" +
 	"\aversion\x18\x04 \x01(\tR\aversion\x12\x1c\n" +
 	"\ttimestamp\x18\x05 \x01(\tR\ttimestamp\x12%\n" +
@@ -553,75 +630,92 @@ const file_proto_ingestion_ingestion_proto_rawDesc = "" +
 	"\x15RetryDLQEventResponse\x12,\n" +
 	"\x05event\x18\x01 \x01(\v2\x16.ingestion.v1.DLQEventR\x05event\x12\x16\n" +
 	"\x06status\x18\x02 \x01(\tR\x06status\x12\x18\n" +
-	"\amessage\x18\x03 \x01(\tR\amessage2\x9f\x02\n" +
+	"\amessage\x18\x03 \x01(\tR\amessage*\xe9\x02\n" +
+	"\tEventType\x12\x1a\n" +
+	"\x16EVENT_TYPE_UNSPECIFIED\x10\x00\x12\x1b\n" +
+	"\x17EVENT_TYPE_USER_CREATED\x10\x01\x12\x1c\n" +
+	"\x18EVENT_TYPE_USER_VERIFIED\x10\x02\x12\x1c\n" +
+	"\x18EVENT_TYPE_ORDER_CREATED\x10\x03\x12\x1e\n" +
+	"\x1aEVENT_TYPE_ORDER_CANCELLED\x10\x04\x12\x1c\n" +
+	"\x18EVENT_TYPE_ORDER_SHIPPED\x10\x05\x12\x1e\n" +
+	"\x1aEVENT_TYPE_ORDER_DELIVERED\x10\x06\x12 \n" +
+	"\x1cEVENT_TYPE_PAYMENT_SUCCEEDED\x10\a\x12\x1d\n" +
+	"\x19EVENT_TYPE_PAYMENT_FAILED\x10\b\x12#\n" +
+	"\x1fEVENT_TYPE_SUBSCRIPTION_STARTED\x10\t\x12#\n" +
+	"\x1fEVENT_TYPE_SUBSCRIPTION_EXPIRED\x10\n" +
+	"2\x9f\x02\n" +
 	"\x15EventIngestionService\x12R\n" +
 	"\vIngestEvent\x12 .ingestion.v1.IngestEventRequest\x1a!.ingestion.v1.IngestEventResponse\x12X\n" +
 	"\rListDLQEvents\x12\".ingestion.v1.ListDLQEventsRequest\x1a#.ingestion.v1.ListDLQEventsResponse\x12X\n" +
 	"\rRetryDLQEvent\x12\".ingestion.v1.RetryDLQEventRequest\x1a#.ingestion.v1.RetryDLQEventResponseB3Z1github.com/kaizakin/siphon/gen/proto/ingestion/v1b\x06proto3"
 
 var (
-	file_proto_ingestion_ingestion_proto_rawDescOnce sync.Once
-	file_proto_ingestion_ingestion_proto_rawDescData []byte
+	file_ingestion_v1_ingestion_proto_rawDescOnce sync.Once
+	file_ingestion_v1_ingestion_proto_rawDescData []byte
 )
 
-func file_proto_ingestion_ingestion_proto_rawDescGZIP() []byte {
-	file_proto_ingestion_ingestion_proto_rawDescOnce.Do(func() {
-		file_proto_ingestion_ingestion_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_proto_ingestion_ingestion_proto_rawDesc), len(file_proto_ingestion_ingestion_proto_rawDesc)))
+func file_ingestion_v1_ingestion_proto_rawDescGZIP() []byte {
+	file_ingestion_v1_ingestion_proto_rawDescOnce.Do(func() {
+		file_ingestion_v1_ingestion_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_ingestion_v1_ingestion_proto_rawDesc), len(file_ingestion_v1_ingestion_proto_rawDesc)))
 	})
-	return file_proto_ingestion_ingestion_proto_rawDescData
+	return file_ingestion_v1_ingestion_proto_rawDescData
 }
 
-var file_proto_ingestion_ingestion_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
-var file_proto_ingestion_ingestion_proto_goTypes = []any{
-	(*IngestEventRequest)(nil),    // 0: ingestion.v1.IngestEventRequest
-	(*IngestEventResponse)(nil),   // 1: ingestion.v1.IngestEventResponse
-	(*ListDLQEventsRequest)(nil),  // 2: ingestion.v1.ListDLQEventsRequest
-	(*DLQEvent)(nil),              // 3: ingestion.v1.DLQEvent
-	(*ListDLQEventsResponse)(nil), // 4: ingestion.v1.ListDLQEventsResponse
-	(*RetryDLQEventRequest)(nil),  // 5: ingestion.v1.RetryDLQEventRequest
-	(*RetryDLQEventResponse)(nil), // 6: ingestion.v1.RetryDLQEventResponse
-	nil,                           // 7: ingestion.v1.IngestEventRequest.MetadataEntry
-	(*structpb.Struct)(nil),       // 8: google.protobuf.Struct
+var file_ingestion_v1_ingestion_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_ingestion_v1_ingestion_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_ingestion_v1_ingestion_proto_goTypes = []any{
+	(EventType)(0),                // 0: ingestion.v1.EventType
+	(*IngestEventRequest)(nil),    // 1: ingestion.v1.IngestEventRequest
+	(*IngestEventResponse)(nil),   // 2: ingestion.v1.IngestEventResponse
+	(*ListDLQEventsRequest)(nil),  // 3: ingestion.v1.ListDLQEventsRequest
+	(*DLQEvent)(nil),              // 4: ingestion.v1.DLQEvent
+	(*ListDLQEventsResponse)(nil), // 5: ingestion.v1.ListDLQEventsResponse
+	(*RetryDLQEventRequest)(nil),  // 6: ingestion.v1.RetryDLQEventRequest
+	(*RetryDLQEventResponse)(nil), // 7: ingestion.v1.RetryDLQEventResponse
+	nil,                           // 8: ingestion.v1.IngestEventRequest.MetadataEntry
+	(*structpb.Struct)(nil),       // 9: google.protobuf.Struct
 }
-var file_proto_ingestion_ingestion_proto_depIdxs = []int32{
-	7, // 0: ingestion.v1.IngestEventRequest.metadata:type_name -> ingestion.v1.IngestEventRequest.MetadataEntry
-	8, // 1: ingestion.v1.IngestEventRequest.payload:type_name -> google.protobuf.Struct
-	8, // 2: ingestion.v1.DLQEvent.payload:type_name -> google.protobuf.Struct
-	3, // 3: ingestion.v1.ListDLQEventsResponse.events:type_name -> ingestion.v1.DLQEvent
-	3, // 4: ingestion.v1.RetryDLQEventResponse.event:type_name -> ingestion.v1.DLQEvent
-	0, // 5: ingestion.v1.EventIngestionService.IngestEvent:input_type -> ingestion.v1.IngestEventRequest
-	2, // 6: ingestion.v1.EventIngestionService.ListDLQEvents:input_type -> ingestion.v1.ListDLQEventsRequest
-	5, // 7: ingestion.v1.EventIngestionService.RetryDLQEvent:input_type -> ingestion.v1.RetryDLQEventRequest
-	1, // 8: ingestion.v1.EventIngestionService.IngestEvent:output_type -> ingestion.v1.IngestEventResponse
-	4, // 9: ingestion.v1.EventIngestionService.ListDLQEvents:output_type -> ingestion.v1.ListDLQEventsResponse
-	6, // 10: ingestion.v1.EventIngestionService.RetryDLQEvent:output_type -> ingestion.v1.RetryDLQEventResponse
-	8, // [8:11] is the sub-list for method output_type
-	5, // [5:8] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+var file_ingestion_v1_ingestion_proto_depIdxs = []int32{
+	0, // 0: ingestion.v1.IngestEventRequest.event_type:type_name -> ingestion.v1.EventType
+	8, // 1: ingestion.v1.IngestEventRequest.metadata:type_name -> ingestion.v1.IngestEventRequest.MetadataEntry
+	9, // 2: ingestion.v1.IngestEventRequest.payload:type_name -> google.protobuf.Struct
+	9, // 3: ingestion.v1.DLQEvent.payload:type_name -> google.protobuf.Struct
+	4, // 4: ingestion.v1.ListDLQEventsResponse.events:type_name -> ingestion.v1.DLQEvent
+	4, // 5: ingestion.v1.RetryDLQEventResponse.event:type_name -> ingestion.v1.DLQEvent
+	1, // 6: ingestion.v1.EventIngestionService.IngestEvent:input_type -> ingestion.v1.IngestEventRequest
+	3, // 7: ingestion.v1.EventIngestionService.ListDLQEvents:input_type -> ingestion.v1.ListDLQEventsRequest
+	6, // 8: ingestion.v1.EventIngestionService.RetryDLQEvent:input_type -> ingestion.v1.RetryDLQEventRequest
+	2, // 9: ingestion.v1.EventIngestionService.IngestEvent:output_type -> ingestion.v1.IngestEventResponse
+	5, // 10: ingestion.v1.EventIngestionService.ListDLQEvents:output_type -> ingestion.v1.ListDLQEventsResponse
+	7, // 11: ingestion.v1.EventIngestionService.RetryDLQEvent:output_type -> ingestion.v1.RetryDLQEventResponse
+	9, // [9:12] is the sub-list for method output_type
+	6, // [6:9] is the sub-list for method input_type
+	6, // [6:6] is the sub-list for extension type_name
+	6, // [6:6] is the sub-list for extension extendee
+	0, // [0:6] is the sub-list for field type_name
 }
 
-func init() { file_proto_ingestion_ingestion_proto_init() }
-func file_proto_ingestion_ingestion_proto_init() {
-	if File_proto_ingestion_ingestion_proto != nil {
+func init() { file_ingestion_v1_ingestion_proto_init() }
+func file_ingestion_v1_ingestion_proto_init() {
+	if File_ingestion_v1_ingestion_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_ingestion_ingestion_proto_rawDesc), len(file_proto_ingestion_ingestion_proto_rawDesc)),
-			NumEnums:      0,
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ingestion_v1_ingestion_proto_rawDesc), len(file_ingestion_v1_ingestion_proto_rawDesc)),
+			NumEnums:      1,
 			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_proto_ingestion_ingestion_proto_goTypes,
-		DependencyIndexes: file_proto_ingestion_ingestion_proto_depIdxs,
-		MessageInfos:      file_proto_ingestion_ingestion_proto_msgTypes,
+		GoTypes:           file_ingestion_v1_ingestion_proto_goTypes,
+		DependencyIndexes: file_ingestion_v1_ingestion_proto_depIdxs,
+		EnumInfos:         file_ingestion_v1_ingestion_proto_enumTypes,
+		MessageInfos:      file_ingestion_v1_ingestion_proto_msgTypes,
 	}.Build()
-	File_proto_ingestion_ingestion_proto = out.File
-	file_proto_ingestion_ingestion_proto_goTypes = nil
-	file_proto_ingestion_ingestion_proto_depIdxs = nil
+	File_ingestion_v1_ingestion_proto = out.File
+	file_ingestion_v1_ingestion_proto_goTypes = nil
+	file_ingestion_v1_ingestion_proto_depIdxs = nil
 }

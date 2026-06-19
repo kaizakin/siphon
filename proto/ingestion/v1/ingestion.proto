@@ -4,11 +4,32 @@ package ingestion.v1;
 
 import "google/protobuf/struct.proto";
 
-option go_package = "github.com/kaizakin/siphon/gen/proto/ingestion/v1";
+option go_package = "github.com/kaizakin/siphon/gen/ingestion/v1";
+
+enum EventType {
+  EVENT_TYPE_UNSPECIFIED = 0;
+  // User
+  EVENT_TYPE_USER_CREATED = 1;
+  EVENT_TYPE_USER_VERIFIED = 2;  
+
+  // Order
+  EVENT_TYPE_ORDER_CREATED = 3;
+  EVENT_TYPE_ORDER_CANCELLED = 4;
+  EVENT_TYPE_ORDER_SHIPPED = 5;
+  EVENT_TYPE_ORDER_DELIVERED = 6;
+
+  // Payment
+  EVENT_TYPE_PAYMENT_SUCCEEDED = 7;
+  EVENT_TYPE_PAYMENT_FAILED = 8;
+
+  // Subscription
+  EVENT_TYPE_SUBSCRIPTION_STARTED = 9;
+  EVENT_TYPE_SUBSCRIPTION_EXPIRED = 10;
+}
 
 message IngestEventRequest {
     string event_id = 1; // each event gets its own unique id
-    string event_type = 2;
+    EventType event_type = 2;
     string source = 3;
     string version = 4;
     string timestamp = 5;
