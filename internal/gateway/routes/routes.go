@@ -24,8 +24,8 @@ func SetupRouter(auth_url string, handler *handlers.IngestionHandler) *chi.Mux {
 		r.Post("/event", handler.CreateEvent)
 
 		// dead letter queue (event ingestion)
-		// r.Get("/dlq/events")
-		// r.Post("/dlq/events/{id}/retry")
+		r.Get("/dlq/events", handler.GetDLQEvents)
+		r.Post("/dlq/events/{id}/retry", handler.RetryDLQEvent)
 	})
 
 	return r
