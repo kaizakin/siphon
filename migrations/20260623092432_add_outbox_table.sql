@@ -1,7 +1,6 @@
 -- +goose Up
 CREATE TABLE outbox_events (
-  id UUID PRIMARY KEY,
-  event_id UUID NOT NULL,
+  event_id UUID PRIMARY KEY,
   event_type TEXT NOT NULL,
   source TEXT NOT NULL,
   version TEXT NOT NULL,
