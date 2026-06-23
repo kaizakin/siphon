@@ -31,6 +31,12 @@ tasks:
     cmds:
       - goose -dir migrations postgres "$DATABASE_URL" up
 
+  goose:down:
+    desc: goose down operation (bring down all the migrations)
+    cmds:
+      - goose -dir migrations postgres "$DATABASE_URL" down
+    silent: true
+
   run:gateway:
     desc: Run the API gateway
     dir: cmd/api-gateway
