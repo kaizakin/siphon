@@ -37,7 +37,7 @@ OFFSET $2;
 UPDATE outbox_events
 SET
   status = 'done',
-  processed_at = NOW(),
+  processed_at = NOW()
 WHERE event_id = $1;
 
 -- name: MarkOutboxEventFailed :exec
