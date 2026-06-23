@@ -10,3 +10,14 @@ sql:
         sql_package: "pgx/v5" # database driver to generate code for.
         emit_json_tags: true
         emit_db_tags: true 
+        
+  - engine: "postgresql"
+    queries: "sqlc/ingestion/query.sql"
+    schema: "migrations"
+    gen:
+      go:
+        package: "sqlc" # Package name
+        out: "internal/ingestion/sqlc" # Output folder
+        sql_package: "pgx/v5" # database driver to generate code for.
+        emit_json_tags: true # add json tags to generated structs
+        emit_db_tags: true # add db tags to generated structs
