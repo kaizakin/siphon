@@ -12,7 +12,7 @@ CREATE TABLE outbox_events (
   status TEXT NOT NULL DEFAULT 'pending',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   processed_at TIMESTAMPTZ,
-  error_message TEXT NOT NULL
+  error_message TEXT
 );
 
 -- index makes the query faster

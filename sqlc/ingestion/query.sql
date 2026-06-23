@@ -38,7 +38,6 @@ UPDATE outbox_events
 SET
   status = 'done',
   processed_at = NOW(),
-  error_message = ''
 WHERE event_id = $1;
 
 -- name: MarkOutboxEventFailed :exec
