@@ -5,6 +5,9 @@ version: '3'
 vars:
   GREETING: Hello, world!
 
+dotenv:
+  - .env
+
 tasks:
   default:
     desc: Print a greeting message
