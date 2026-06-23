@@ -16,5 +16,5 @@ CREATE TABLE refresh_tokens (
 );
 
 -- +goose Down
-DROP TABLE users;
-DROP TABLE refresh_tokens;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS refresh_tokens;
