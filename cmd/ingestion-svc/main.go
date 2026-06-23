@@ -50,7 +50,7 @@ func main() {
   }
 
   grpcServer := grpc.NewServer()
-  ingestionserver := server.NewIngestionServer(cfg.KafkaBroker, handler)
+  ingestionserver := server.NewIngestionServer(cfg.KafkaBroker, handler.Queries)
   
   ingestionv1.RegisterEventIngestionServiceServer(grpcServer, ingestionserver)
 
