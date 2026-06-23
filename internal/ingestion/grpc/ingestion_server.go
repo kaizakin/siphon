@@ -2,35 +2,32 @@ package grpcserver
 
 import (
 	"context"
-	"time"
 
-	ingestionv1 "github.com/kaizakin/siphon/gen/ingestion/v1"
 	"github.com/segmentio/kafka-go"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
+	
+	ingestionv1 "github.com/kaizakin/siphon/gen/ingestion/v1"
+	"github.com/kaizakin/siphon/internal/ingestion/sqlc"
 )
 
 type IngestionServer struct {
 	ingestionv1.UnimplementedEventIngestionServiceServer
 	writer     *kafka.Writer
-	dlqWriter  *kafka.Writer
 	eventQueue chan *ingestionv1.IngestEventRequest
+	Handler // embed handler to the IngestionServer
 }
 
-func NewIngestionServer(addr string) *IngestionServer {
+func NewIngestionServer(addr string, pgxhandler *db.Queries) *IngestionServer {
 	s := &IngestionServer{
 		writer: &kafka.Writer{
 			Addr:     kafka.TCP(addr),
 			Topic:    "events",
 			Balancer: &kafka.LeastBytes{},
 		},
-		dlqWriter: &kafka.Writer{
-			Addr:     kafka.TCP(addr),
-			Topic:    "events-dlq",
-			Balancer: &kafka.LeastBytes{},
-		},
 		eventQueue: make(chan *ingestionv1.IngestEventRequest, 10000), // buffered channel that can hold 10,000 requests.
+		Queries: pgxhandler,
 	}
 
 	for i := 0; i < 10; i++ {
@@ -61,14 +58,7 @@ func (s *IngestionServer) kafkaWorker() {
 }
 
 func (s *IngestionServer) writeToDLQ(msg kafka.Message) {
-	for i := 0; i < 3; i++ {
-		err := s.dlqWriter.WriteMessages(context.Background(), msg)
-		if err == nil {
-			break
-		}
-
-		time.Sleep(time.Second) // wait for a second before trying again.
-	}
+  _, err := 
 }
 
 // ingestevent sends an optimistic acknowledgement as soon as the event reaches the buffered channel

@@ -8,6 +8,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/joho/godotenv v1.5.1
+	github.com/resend/resend-go/v3 v3.9.2
 	github.com/segmentio/kafka-go v0.4.51
 	google.golang.org/grpc v1.81.1
 	google.golang.org/protobuf v1.36.11
