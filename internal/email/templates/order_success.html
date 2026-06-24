@@ -1,0 +1,9 @@
+{{ define "order_success" }}
+<p>Hi {{ .Name }},</p>
+
+<p>Your order <strong>{{ .OrderID }}</strong> has been placed successfully.</p>
+
+<p>Total Amount: ₹{{ .Amount }}</p>
+
+<p>We'll notify you once it ships.</p>
+{{ end }}

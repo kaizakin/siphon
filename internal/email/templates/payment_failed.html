@@ -1,0 +1,12 @@
+{{ define "payment_failed" }}
+<p>Hi {{ .Name }},</p>
+
+<p>Your payment could not be completed.</p>
+
+<p>
+Transaction ID:
+<strong>{{ .TransactionID }}</strong>
+</p>
+
+<p>Please try again using another payment method.</p>
+{{ end }}

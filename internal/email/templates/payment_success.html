@@ -1,0 +1,12 @@
+{{ define "payment_success" }}
+<p>Hi {{ .Name }},</p>
+
+<p>We've received your payment successfully.</p>
+
+<p>
+Transaction ID:
+<strong>{{ .TransactionID }}</strong>
+</p>
+
+<p>Amount Paid: ₹{{ .Amount }}</p>
+{{ end }}

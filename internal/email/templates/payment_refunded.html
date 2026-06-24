@@ -1,0 +1,14 @@
+{{ define "payment_refunded" }}
+<p>Hi {{ .Name }},</p>
+
+<p>Your refund has been processed successfully.</p>
+
+<p>
+Order ID:
+<strong>{{ .OrderID }}</strong>
+</p>
+
+<p>Refund Amount: ₹{{ .Amount }}</p>
+
+<p>The amount should reflect in your account shortly.</p>
+{{ end }}
