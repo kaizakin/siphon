@@ -1,9 +1,10 @@
+{{ define "layout" }}
 <!DOCTYPE html>
 <html>
 <body style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
   <h2>{{ .Title }}</h2>
 
-  {{ template .EventType . }}
+  {{ template "content" . }}
 
   <hr>
   <p style="color: #666; font-size: 12px;">
