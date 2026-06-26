@@ -1,7 +1,9 @@
 package email
 
-import(
-  "github.com/resend/resend-go/v3"
+import (
+	"log"
+
+	"github.com/resend/resend-go/v3"
 )
 
 type Event struct {
@@ -11,27 +13,32 @@ type Event struct {
 }
 
 type ResendClient struct {
-  client *resend.Client
-  from string
+	client *resend.Client
+	from   string
 }
 
 func NewResendClient(apikey string, from string) *ResendClient {
-  return &ResendClient{
-    client: resend.NewClient(apikey),
-    from: from,
-  }
+	return &ResendClient{
+		client: resend.NewClient(apikey),
+		from:   from,
+	}
 }
 
 // send email
-func(r *ResendClient) Send(to []string, subject string, html string) error {
-  params := &resend.SendEmailRequest{
-    From: r.from,
-    To: to,
-    Subject: subject,
-    Html: html,
-  }
+func (r *ResendClient) Send(to []string, subject string, html string) error {
+	params := &resend.SendEmailRequest{
+		From:    r.from,
+		To:      to,
+		Subject: subject,
+		Html:    html,
+	}
 
-  _, err := r.client.Emails.Send(params) 
+	sent, err := r.client.Emails.Send(params)
+	if err != nil {
+		log.Fatalf("failed to send email: %v", err)
+	}
 
-  return err
+	log.Printf("email sent: %s", sent.Id)
+
+	return err
 }
