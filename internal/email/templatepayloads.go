@@ -1,5 +1,10 @@
 package email
 
+type TemplateData struct {
+  TemplateName string
+  Data any
+}
+
 type SignupThankYouData struct {
 	Name string
 	Year int
