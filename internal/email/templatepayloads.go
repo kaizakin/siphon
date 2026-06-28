@@ -1,8 +1,8 @@
 package email
 
 type TemplateData struct {
-  TemplateName string
-  Data any
+	TemplateName string
+	Data         any
 }
 
 type SignupThankYouData struct {
@@ -22,9 +22,9 @@ type OrderFailedData struct {
 	OrderID string
 }
 
-type OrderCancelled struct {
-  Name string
-  OrderID string
+type OrderCancelledData struct {
+	Name    string
+	OrderID string
 }
 
 type PaymentSuccessData struct {
@@ -35,8 +35,8 @@ type PaymentSuccessData struct {
 }
 
 type PaymentFailedData struct {
-  Name string
-  TransactionID string
+	Name          string
+	TransactionID string
 }
 
 type PaymentRefundedData struct {
