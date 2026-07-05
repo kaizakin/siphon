@@ -23,7 +23,7 @@ tasks:
     cmds:
       - |
         echo "Starting the auth service"
-        PORT=8080 go run main.go
+        go run main.go
     silent: true
 
   db:migrate:
