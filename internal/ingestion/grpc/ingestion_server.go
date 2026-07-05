@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	ingestionv1 "github.com/kaizakin/siphon/gen/ingestion/v1"
 	"github.com/kaizakin/siphon/internal/ingestion/sqlc"
@@ -48,7 +49,9 @@ func NewIngestionServer(addr string, pgxhandler *db.Queries) *IngestionServer {
 // kafka worker keeps on writing messages from the channel to kafka
 func (s *IngestionServer) kafkaWorker() {
 	for req := range s.eventQueue {
-		payload, err := proto.Marshal(req) // marshall the msg to protobuf binary format for transport
+	// protojson instead of json because a protoc generated struct is being serialized here
+	// protojson is aware of certain semantics specific to protoc generated structs.
+	payload, err := protojson.Marshal(req) // marshall the msg to json
 		if err != nil {
 			continue
 		}
