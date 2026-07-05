@@ -23,7 +23,7 @@ func (h *TemplateHandler[T]) Send(ctx context.Context, event Event) error {
 	_ = ctx
 
 	var payload T
-	if err := decodeEventData(event.Data, &payload); err != nil {
+	if err := decodeEventData(event.Payload, &payload); err != nil {
 		return err
 	}
 

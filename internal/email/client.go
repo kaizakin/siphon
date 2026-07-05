@@ -9,7 +9,7 @@ import (
 type Event struct {
 	EventType string         `json:"event_type"`
 	Recipient string         `json:"recipient"`
-	Data      map[string]any `json:"data"`
+	Payload   map[string]any `json:"payload"`
 }
 
 type ResendClient struct {
