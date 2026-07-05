@@ -45,7 +45,7 @@ tasks:
     cmds:
       - |
         echo "starting the API gateway"
-        PORT=3000 go run main.go 
+        go run main.go
     silent: true
 
   protoc:
@@ -58,4 +58,26 @@ tasks:
         --go-grpc_out=gen \
         --go-grpc_opt=paths=source_relative \
         proto/ingestion/v1/ingestion.proto
+    silent: true
+
+  run:ingestion:
+    desc: Run the ingestion service
+    dir: cmd/ingestion-svc
+    dotenv:
+      - .env
+    cmds:
+      - |
+        echo "starting the ingestion svc"
+        go run main.go
+    silent: true
+
+  run:email:
+    desc: Run the email svc
+    dir: cmd/email-svc
+    dotenv:
+      - .env
+    cmds:
+      - |
+        echo "starting the Email svc"
+        go run main.go
     silent: true
