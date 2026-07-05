@@ -32,6 +32,7 @@ type IngestEventRequest struct {
 	CorrelationId string                 `protobuf:"bytes,6,opt,name=correlation_id,json=correlationId,proto3" json:"correlation_id,omitempty"`                                            // track a single request throughout multiple services
 	Metadata      map[string]string      `protobuf:"bytes,7,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // any metadata can be attached
 	Payload       *structpb.Struct       `protobuf:"bytes,8,opt,name=payload,proto3" json:"payload,omitempty"`                                                                             // arbitrary json payload, dynamic
+	Recipient     string                 `protobuf:"bytes,9,opt,name=recipient,proto3" json:"recipient,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -120,6 +121,13 @@ func (x *IngestEventRequest) GetPayload() *structpb.Struct {
 		return x.Payload
 	}
 	return nil
+}
+
+func (x *IngestEventRequest) GetRecipient() string {
+	if x != nil {
+		return x.Recipient
+	}
+	return ""
 }
 
 type IngestEventResponse struct {
@@ -510,7 +518,7 @@ var File_ingestion_v1_ingestion_proto protoreflect.FileDescriptor
 
 const file_ingestion_v1_ingestion_proto_rawDesc = "" +
 	"\n" +
-	"\x1cingestion/v1/ingestion.proto\x12\fingestion.v1\x1a\x1cgoogle/protobuf/struct.proto\"\x81\x03\n" +
+	"\x1cingestion/v1/ingestion.proto\x12\fingestion.v1\x1a\x1cgoogle/protobuf/struct.proto\"\x9f\x03\n" +
 	"\x12IngestEventRequest\x12\x19\n" +
 	"\bevent_id\x18\x01 \x01(\tR\aeventId\x12\x1d\n" +
 	"\n" +
@@ -520,7 +528,8 @@ const file_ingestion_v1_ingestion_proto_rawDesc = "" +
 	"\ttimestamp\x18\x05 \x01(\tR\ttimestamp\x12%\n" +
 	"\x0ecorrelation_id\x18\x06 \x01(\tR\rcorrelationId\x12J\n" +
 	"\bmetadata\x18\a \x03(\v2..ingestion.v1.IngestEventRequest.MetadataEntryR\bmetadata\x121\n" +
-	"\apayload\x18\b \x01(\v2\x17.google.protobuf.StructR\apayload\x1a;\n" +
+	"\apayload\x18\b \x01(\v2\x17.google.protobuf.StructR\apayload\x12\x1c\n" +
+	"\trecipient\x18\t \x01(\tR\trecipient\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"H\n" +

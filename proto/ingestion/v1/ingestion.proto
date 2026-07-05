@@ -39,6 +39,8 @@ message IngestEventRequest {
     map<string, string> metadata = 7;// any metadata can be attached
   
     google.protobuf.Struct payload = 8;  // arbitrary json payload, dynamic
+
+    string recipient = 9;
 }
 
 service EventIngestionService {
