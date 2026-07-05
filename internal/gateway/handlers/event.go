@@ -20,6 +20,7 @@ type IngestionHandler struct {
 type createEventRequest struct {
 	EventType string  `json:"event_type"`
 	Payload map[string]any `json:"payload"`
+	Recipient string `json:"recipient"`
 }
 
 func NewIngestionHandler(client ingesv1.EventIngestionServiceClient) *IngestionHandler {
@@ -49,6 +50,7 @@ func (h *IngestionHandler) CreateEvent(w http.ResponseWriter, r *http.Request) {
 			Timestamp: time.Now().UTC().Format(time.RFC3339),
 			CorrelationId: uuid.NewString(),
 			Payload: payloadStruct,
+			Recipient: req.Recipient,
 		},
 	)
 
