@@ -49,7 +49,7 @@ func (t *TemplateManager) Render(name string, data any) (string, error) {
 	tmpl := t.templates[name]
 
 	var buf bytes.Buffer
-	err := tmpl.Execute(&buf, data)
+	err := tmpl.ExecuteTemplate(&buf, "layout", data)
 	if err != nil {
 		return "", err
 	}

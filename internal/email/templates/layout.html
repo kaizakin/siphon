@@ -4,10 +4,10 @@
   <body style="font-family: Arial, sans-serif; max-width: 600px; margin: auto">
     <h2>{{ .Title }}</h2>
 
-    {{ template "content" . }}
+    {{ template "content" .Data }}
 
     <hr />
-    <p style="color: #666; font-size: 12px">© {{ .Year }} Siphon</p>
+    <p style="color: #666; font-size: 12px">© 2026 Siphon</p>
   </body>
 </html>
 {{ end }}

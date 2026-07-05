@@ -27,7 +27,12 @@ func (h *TemplateHandler[T]) Send(ctx context.Context, event Event) error {
 		return err
 	}
 
-	return h.email.SendTemplate(h.templateName, h.subject, payload, []string{event.Recipient})
+	wrapper := TemplateWrapper{
+		Title: h.subject,
+		Data:  payload,
+	}
+
+	return h.email.SendTemplate(h.templateName, h.subject, wrapper, []string{event.Recipient})
 }
 
 func decodeEventData(data map[string]any, target any) error {
