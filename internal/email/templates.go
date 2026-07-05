@@ -2,9 +2,13 @@ package email
 
 import (
 	"bytes"
+	"embed"
 	"fmt"
 	"html/template"
 )
+
+//go:embed templates/*.html
+var templateFS embed.FS
 
 type TemplateManager struct {
 	templates map[string]*template.Template
@@ -24,7 +28,8 @@ func NewTemplateManager() (*TemplateManager, error) {
 	templates := make(map[string]*template.Template)
 
 	for _, name := range eventtemplates {
-		tmpl, err := template.ParseFiles(
+		tmpl, err := template.ParseFS(
+			templateFS,
 			"templates/layout.html",
 			fmt.Sprintf("templates/%s.html", name),
 		)
@@ -41,13 +46,13 @@ func NewTemplateManager() (*TemplateManager, error) {
 }
 
 func (t *TemplateManager) Render(name string, data any) (string, error) {
-  tmpl := t.templates[name]
+	tmpl := t.templates[name]
 
-  var buf bytes.Buffer
-  err := tmpl.Execute(&buf, data)
-  if err != nil {
-    return "", err
-  }
+	var buf bytes.Buffer
+	err := tmpl.Execute(&buf, data)
+	if err != nil {
+		return "", err
+	}
 
-  return buf.String(), nil
+	return buf.String(), nil
 }

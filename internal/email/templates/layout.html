@@ -1,14 +1,13 @@
 {{ define "layout" }}
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<body style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
-  <h2>{{ .Title }}</h2>
+  <body style="font-family: Arial, sans-serif; max-width: 600px; margin: auto">
+    <h2>{{ .Title }}</h2>
 
-  {{ template "content" . }}
+    {{ template "content" . }}
 
-  <hr>
-  <p style="color: #666; font-size: 12px;">
-    © {{ .Year }} Siphon
-  </p>
-</body>
+    <hr />
+    <p style="color: #666; font-size: 12px">© {{ .Year }} Siphon</p>
+  </body>
 </html>
+{{ end }}
