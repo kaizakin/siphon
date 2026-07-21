@@ -205,6 +205,7 @@ func (s *IngestionServer) RetryDLQEvent(ctx context.Context, req *ingestionv1.Re
 		Version:       res.Version,
 		Timestamp:     res.Timestamp.Time.String(),
 		CorrelationId: res.CorrelationID.String(),
+		Recipient:     res.Recipient.String,
 		Metadata:      metadata,
 		Payload:       payload,
 	}

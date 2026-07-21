@@ -21,6 +21,7 @@ type OutboxEvent struct {
 	CreatedAt     pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	ProcessedAt   pgtype.Timestamptz `db:"processed_at" json:"processed_at"`
 	ErrorMessage  pgtype.Text        `db:"error_message" json:"error_message"`
+	Recipient     pgtype.Text        `db:"recipient" json:"recipient"`
 }
 
 type RefreshToken struct {

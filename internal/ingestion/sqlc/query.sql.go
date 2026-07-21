@@ -36,7 +36,7 @@ VALUES (
     'pending',
     ''
 )
-RETURNING event_id, event_type, source, version, timestamp, correlation_id, metadata, payload, status, created_at, processed_at, error_message
+RETURNING event_id, event_type, source, version, timestamp, correlation_id, metadata, payload, status, created_at, processed_at, error_message, recipient
 `
 
 type CreateOutboxEventParams struct {
@@ -75,12 +75,13 @@ func (q *Queries) CreateOutboxEvent(ctx context.Context, arg CreateOutboxEventPa
 		&i.CreatedAt,
 		&i.ProcessedAt,
 		&i.ErrorMessage,
+		&i.Recipient,
 	)
 	return i, err
 }
 
 const getOutboxEventByEventID = `-- name: GetOutboxEventByEventID :one
-SELECT event_id, event_type, source, version, timestamp, correlation_id, metadata, payload, status, created_at, processed_at, error_message
+SELECT event_id, event_type, source, version, timestamp, correlation_id, metadata, payload, status, created_at, processed_at, error_message, recipient
 FROM outbox_events
 WHERE event_id = $1
 `
@@ -101,12 +102,13 @@ func (q *Queries) GetOutboxEventByEventID(ctx context.Context, eventID pgtype.UU
 		&i.CreatedAt,
 		&i.ProcessedAt,
 		&i.ErrorMessage,
+		&i.Recipient,
 	)
 	return i, err
 }
 
 const getPendingOutboxEvents = `-- name: GetPendingOutboxEvents :many
-SELECT event_id, event_type, source, version, timestamp, correlation_id, metadata, payload, status, created_at, processed_at, error_message
+SELECT event_id, event_type, source, version, timestamp, correlation_id, metadata, payload, status, created_at, processed_at, error_message, recipient
 FROM outbox_events
 WHERE status = 'pending'
 ORDER BY created_at ASC
@@ -141,6 +143,7 @@ func (q *Queries) GetPendingOutboxEvents(ctx context.Context, arg GetPendingOutb
 			&i.CreatedAt,
 			&i.ProcessedAt,
 			&i.ErrorMessage,
+			&i.Recipient,
 		); err != nil {
 			return nil, err
 		}
