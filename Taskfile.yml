@@ -81,3 +81,11 @@ tasks:
         echo "starting the Email svc"
         go run main.go
     silent: true
+
+  dev:
+    desc: run everything (for development and testing)
+    deps:
+      - run:auth
+      - run:ingestion
+      - run:gateway
+      - run:email
