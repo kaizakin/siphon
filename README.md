@@ -10,6 +10,8 @@ Some production pieces are already present. Some are intentionally still rough. 
 
 At a high level, external clients talk to the API Gateway. The gateway forwards auth requests to the Auth service and event requests to the Ingestion service. The Ingestion service writes events to Kafka. The Email service consumes from Kafka and dispatches the right email handler based on `event_type`.
 
+Api reference can be found at [API_DOCS](./API_DOCS.md)
+
 ```mermaid
 flowchart LR
     Client[Client / Demo UI / API caller]
