@@ -3,6 +3,7 @@ package grpcserver
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"time"
 
@@ -47,24 +48,28 @@ func NewIngestionServer(addr string, pgxhandler *db.Queries) *IngestionServer {
 // kafka worker keeps on writing messages from the channel to kafka
 func (s *IngestionServer) kafkaWorker() {
 	for req := range s.eventQueue {
-		// protojson instead of json because a protoc generated struct is being serialized here
-		// protojson is aware of certain semantics specific to protoc generated structs.
-		payload, err := json.Marshal(req) // marshall the msg to json
-		if err != nil {
-			continue
-		}
-
-		msg := kafka.Message{
-			Key:   []byte(req.CorrelationId),
-			Value: payload,
-		}
-
-		err = s.writer.WriteMessages(context.Background(), msg)
-		if err != nil {
+		if err := s.publishToKafka(context.Background(), req); err != nil {
 			log.Printf("Failed to write to kafka: %v", err)
 			s.writeToDLQ(req, err)
 		}
 	}
+}
+
+// publishToKafka marshals the event and writes it to the events topic.
+func (s *IngestionServer) publishToKafka(ctx context.Context, req *ingestionv1.IngestEventRequest) error {
+	// protojson instead of json because a protoc generated struct is being serialized here
+	// protojson is aware of certain semantics specific to protoc generated structs.
+	payload, err := json.Marshal(req) // marshall the msg to json
+	if err != nil {
+		return err
+	}
+
+	msg := kafka.Message{
+		Key:   []byte(req.CorrelationId),
+		Value: payload,
+	}
+
+	return s.writer.WriteMessages(ctx, msg)
 }
 
 func (s *IngestionServer) writeToDLQ(event *ingestionv1.IngestEventRequest, kafkaerror error) {
@@ -182,7 +187,10 @@ func (s *IngestionServer) RetryDLQEvent(ctx context.Context, req *ingestionv1.Re
 		return nil, err
 	}
 
-	res, err := s.Handler.Queries.GetOutboxEventByEventID(context.Background(), id)
+	res, err := s.Handler.Queries.GetOutboxEventByEventID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
 
 	var metadata map[string]string
 	var payloadmap map[string]interface{}
@@ -214,16 +222,30 @@ func (s *IngestionServer) RetryDLQEvent(ctx context.Context, req *ingestionv1.Re
 		Payload:       payload,
 	}
 
-	ingesteventResponse, err := s.IngestEvent(context.Background(), event)
-	if err != nil {
-		return nil, err
+	if err := s.publishToKafka(ctx, event); err != nil {
+		if markErr := s.Queries.MarkOutboxEventFailed(ctx, sqlc.MarkOutboxEventFailedParams{
+			EventID:      id,
+			ErrorMessage: pgtype.Text{String: err.Error(), Valid: true},
+		}); markErr != nil {
+			log.Printf("failed to mark outbox event %s as failed: %v", req.GetEventId(), markErr)
+		}
+
+		return &ingestionv1.RetryDLQEventResponse{
+			Event:   &ingestionv1.DLQEvent{EventId: res.EventID.String()},
+			Status:  "failed",
+			Message: fmt.Sprintf("retry failed: %v", err),
+		}, nil
+	}
+
+	if err := s.Queries.MarkOutboxEventProcessed(ctx, id); err != nil {
+		log.Printf("failed to mark outbox event %s as processed: %v", req.GetEventId(), err)
 	}
 
 	return &ingestionv1.RetryDLQEventResponse{
 		Event: &ingestionv1.DLQEvent{
-			EventId: ingesteventResponse.EventId,
+			EventId: res.EventID.String(),
 		},
-		Status:  "Sucess",
-		Message: "Event accepted",
+		Status:  "success",
+		Message: "event retried and published successfully",
 	}, nil
 }

@@ -414,12 +414,12 @@ go test ./...
 
 ### Highest Priority
 
-- [ ] Protect admin/DLQ endpoints with JWT auth in the API Gateway
-- [ ] Add role or admin authorization for DLQ routes
+- [x] Protect admin/DLQ endpoints with JWT auth in the API Gateway
+- [x] Add role or admin authorization for DLQ routes
 - [x] Fix Kafka message format mismatch between Ingestion producer and Email consumer
-- [ ] Decide the real email event schema, including how the recipient email reaches the Email service
-- [ ] Store the actual failure reason in `outbox_events.error_message`
-- [ ] Wire `MarkOutboxEventProcessed` and `MarkOutboxEventFailed` into the DLQ retry flow
+- [x] Decide the real email event schema, including how the recipient email reaches the Email service
+- [x] Store the actual failure reason in `outbox_events.error_message`
+- [x] Wire `MarkOutboxEventProcessed` and `MarkOutboxEventFailed` into the DLQ retry flow
 - [ ] Demonstrate a failed event going into `outbox_events` and being retried successfully
 
 ### Event Reliability
@@ -435,13 +435,13 @@ go test ./...
 
 ### Event Tracking And Audit
 
-- [ ] Store successful events
-- [ ] Add `GET /events/{event_id}`
-- [ ] Add event timeline/history table
-- [ ] Track lifecycle states like `accepted`, `published_to_kafka`, `consumed_by_email_service`, `email_sent`, and `email_failed`
-- [ ] Add audit log inspired by the Kronos project
-- [ ] Add correlation-ID based event lookup
-- [ ] Add dashboard-friendly filters for event type, status, source, and time range
+- [x] Store successful events
+- [x] Add `GET /events/{event_id}`
+- [x] Add event timeline/history table
+- [x] Track lifecycle states like `accepted`, `published_to_kafka`, `consumed_by_email_service`, `email_sent`, and `email_failed`
+- [x] Add audit log inspired by the Kronos project
+- [x] Add correlation-ID based event lookup
+- [x] Add dashboard-friendly filters for event type, status, source, and time range
 
 ### Observability And Operations
 
