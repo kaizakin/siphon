@@ -416,7 +416,7 @@ go test ./...
 
 - [ ] Protect admin/DLQ endpoints with JWT auth in the API Gateway
 - [ ] Add role or admin authorization for DLQ routes
-- [ ] Fix Kafka message format mismatch between Ingestion producer and Email consumer
+- [x] Fix Kafka message format mismatch between Ingestion producer and Email consumer
 - [ ] Decide the real email event schema, including how the recipient email reaches the Email service
 - [ ] Store the actual failure reason in `outbox_events.error_message`
 - [ ] Wire `MarkOutboxEventProcessed` and `MarkOutboxEventFailed` into the DLQ retry flow

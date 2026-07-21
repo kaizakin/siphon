@@ -16,6 +16,7 @@ type Config struct {
 	Port string
 	Auth_svc_url string
 	Ingestion_svc_url string
+	Jwt_secret string
 }
 
 func main() {
@@ -28,6 +29,7 @@ func main() {
 		Port: config.Getenv("PORT"),
 		Auth_svc_url: config.Getenv("AUTH_SVC_URL"),
 		Ingestion_svc_url: config.Getenv("INGESTION_SVC_URL"),
+		Jwt_secret: config.Getenv("JWT_SECRET"),
 	}
 	
 	ingestionclient, err := grpcclient.NewIngestionclient(cfg.Ingestion_svc_url)
@@ -37,7 +39,7 @@ func main() {
 
 	ingestionhandler := handlers.NewIngestionHandler(ingestionclient)
 
-	r := routes.SetupRouter(cfg.Auth_svc_url, ingestionhandler)
+	r := routes.SetupRouter(cfg.Auth_svc_url, cfg.Jwt_secret, ingestionhandler)
 
 	log.Printf("API gateway running on port %s\n", cfg.Port)
 	log.Fatal(http.ListenAndServe(":" + cfg.Port, r))
