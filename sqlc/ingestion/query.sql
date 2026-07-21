@@ -21,7 +21,7 @@ VALUES (
     $7,
     $8,
     'pending',
-    ''
+    $9
 )
 RETURNING *;
 

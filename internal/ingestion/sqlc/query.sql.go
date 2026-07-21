@@ -34,7 +34,7 @@ VALUES (
     $7,
     $8,
     'pending',
-    ''
+    $9
 )
 RETURNING event_id, event_type, source, version, timestamp, correlation_id, metadata, payload, status, created_at, processed_at, error_message, recipient
 `
@@ -48,6 +48,7 @@ type CreateOutboxEventParams struct {
 	CorrelationID pgtype.UUID        `db:"correlation_id" json:"correlation_id"`
 	Metadata      []byte             `db:"metadata" json:"metadata"`
 	Payload       []byte             `db:"payload" json:"payload"`
+	ErrorMessage  pgtype.Text        `db:"error_message" json:"error_message"`
 }
 
 func (q *Queries) CreateOutboxEvent(ctx context.Context, arg CreateOutboxEventParams) (OutboxEvent, error) {
@@ -60,6 +61,7 @@ func (q *Queries) CreateOutboxEvent(ctx context.Context, arg CreateOutboxEventPa
 		arg.CorrelationID,
 		arg.Metadata,
 		arg.Payload,
+		arg.ErrorMessage,
 	)
 	var i OutboxEvent
 	err := row.Scan(

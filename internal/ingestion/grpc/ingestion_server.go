@@ -62,12 +62,12 @@ func (s *IngestionServer) kafkaWorker() {
 		err = s.writer.WriteMessages(context.Background(), msg)
 		if err != nil {
 			log.Printf("Failed to write to kafka: %v", err)
-			s.writeToDLQ(req)
+			s.writeToDLQ(req, err)
 		}
 	}
 }
 
-func (s *IngestionServer) writeToDLQ(event *ingestionv1.IngestEventRequest) {
+func (s *IngestionServer) writeToDLQ(event *ingestionv1.IngestEventRequest, kafkaerror error) {
 	payloadbytes, err := json.Marshal(event.GetPayload().AsMap())
 	if err != nil {
 		log.Fatal(err)
@@ -111,6 +111,10 @@ func (s *IngestionServer) writeToDLQ(event *ingestionv1.IngestEventRequest) {
 			CorrelationID: corrlationid,
 			Metadata:      metadatabytes,
 			Payload:       payloadbytes,
+			ErrorMessage: pgtype.Text{
+				String: kafkaerror.Error(),
+				Valid:  true,
+			},
 		},
 	)
 	if err != nil {
