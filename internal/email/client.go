@@ -7,9 +7,14 @@ import (
 )
 
 type Event struct {
-	EventType string         `json:"event_type"`
-	Recipient string         `json:"recipient"`
-	Payload   map[string]any `json:"payload"`
+	EventID       string         `json:"event_id"`
+	EventType     string         `json:"event_type"`
+	Recipient     string         `json:"recipient"`
+	CorrelationID string         `json:"correlation_id"`
+	Source        string         `json:"source"`
+	Version       string         `json:"version"`
+	Timestamp     string         `json:"timestamp"`
+	Payload       map[string]any `json:"payload"`
 }
 
 type ResendClient struct {

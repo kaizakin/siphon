@@ -11,6 +11,7 @@ import (
 	"github.com/segmentio/kafka-go"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	ingestionv1 "github.com/kaizakin/siphon/gen/ingestion/v1"
@@ -55,11 +56,12 @@ func (s *IngestionServer) kafkaWorker() {
 	}
 }
 
-// publishToKafka marshals the event and writes it to the events topic.
+// publishToKafka marshals the event to JSON using protojson so that nested
+// structpb.Struct payloads and snake_case field names match consumer expectations.
 func (s *IngestionServer) publishToKafka(ctx context.Context, req *ingestionv1.IngestEventRequest) error {
-	// protojson instead of json because a protoc generated struct is being serialized here
-	// protojson is aware of certain semantics specific to protoc generated structs.
-	payload, err := json.Marshal(req) // marshall the msg to json
+	payload, err := protojson.MarshalOptions{
+		UseProtoNames: true,
+	}.Marshal(req)
 	if err != nil {
 		return err
 	}
