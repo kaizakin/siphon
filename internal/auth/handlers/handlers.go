@@ -65,8 +65,13 @@ func (h *Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 			ID:           id,
 			Email:        req.Email,
 			PasswordHash: string(hash),
+			Role:         "user",
 		},
 	)
+	if err != nil {
+		http.Error(w, "Failed to create user", http.StatusInternalServerError)
+		return
+	}
 
 	refreshToken, err := generateRefreshToken(h, user.ID)
 	if err != nil {

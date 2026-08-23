@@ -82,6 +82,18 @@ tasks:
         go run main.go
     silent: true
 
+  admin:create:
+    desc: Promote or create an admin user
+    dotenv:
+      - .env
+    cmds:
+      - go run cmd/admin-create/main.go {{.CLI_ARGS}}
+
+  sqlc:generate:
+    desc: Generate sqlc code from queries and migrations
+    cmds:
+      - sqlc generate
+
   dev:
     desc: run everything (for development and testing)
     deps:

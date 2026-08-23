@@ -38,4 +38,5 @@ type User struct {
 	PasswordHash string             `db:"password_hash" json:"password_hash"`
 	CreatedAt    pgtype.Timestamptz `db:"created_at" json:"created_at"`
 	UpdatedAt    pgtype.Timestamptz `db:"updated_at" json:"updated_at"`
+	Role         string             `db:"role" json:"role"`
 }

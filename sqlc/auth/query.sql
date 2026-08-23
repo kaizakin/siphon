@@ -2,13 +2,21 @@
 INSERT INTO users (
     id,
     email,
-    password_hash
+    password_hash,
+    role
 )
 VALUES (
     $1,
     $2,
-    $3
+    $3,
+    $4
 )
+RETURNING *;
+
+-- name: UpdateUserRole :one
+UPDATE users
+SET role = $2, updated_at = NOW()
+WHERE email = $1
 RETURNING *;
 
 -- name: GetUserByEmail :one

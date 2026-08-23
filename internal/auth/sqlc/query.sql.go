@@ -48,24 +48,32 @@ const createUser = `-- name: CreateUser :one
 INSERT INTO users (
     id,
     email,
-    password_hash
+    password_hash,
+    role
 )
 VALUES (
     $1,
     $2,
-    $3
+    $3,
+    $4
 )
-RETURNING id, email, password_hash, created_at, updated_at
+RETURNING id, email, password_hash, created_at, updated_at, role
 `
 
 type CreateUserParams struct {
 	ID           pgtype.UUID `db:"id" json:"id"`
 	Email        string      `db:"email" json:"email"`
 	PasswordHash string      `db:"password_hash" json:"password_hash"`
+	Role         string      `db:"role" json:"role"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
-	row := q.db.QueryRow(ctx, createUser, arg.ID, arg.Email, arg.PasswordHash)
+	row := q.db.QueryRow(ctx, createUser,
+		arg.ID,
+		arg.Email,
+		arg.PasswordHash,
+		arg.Role,
+	)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -73,6 +81,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.PasswordHash,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Role,
 	)
 	return i, err
 }
@@ -107,7 +116,7 @@ func (q *Queries) GetRefreshToken(ctx context.Context, token string) (RefreshTok
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, password_hash, created_at, updated_at FROM users
+SELECT id, email, password_hash, created_at, updated_at, role FROM users
 WHERE
 email = $1
 LIMIT 1
@@ -122,6 +131,33 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.PasswordHash,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Role,
+	)
+	return i, err
+}
+
+const updateUserRole = `-- name: UpdateUserRole :one
+UPDATE users
+SET role = $2, updated_at = NOW()
+WHERE email = $1
+RETURNING id, email, password_hash, created_at, updated_at, role
+`
+
+type UpdateUserRoleParams struct {
+	Email string `db:"email" json:"email"`
+	Role  string `db:"role" json:"role"`
+}
+
+func (q *Queries) UpdateUserRole(ctx context.Context, arg UpdateUserRoleParams) (User, error) {
+	row := q.db.QueryRow(ctx, updateUserRole, arg.Email, arg.Role)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.PasswordHash,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Role,
 	)
 	return i, err
 }
