@@ -46,3 +46,8 @@ LIMIT 1;
 -- name: DeleteRefreshToken :exec
 DELETE from refresh_tokens
 WHERE token = $1;
+
+-- name: GetUserByID :one
+SELECT * FROM users
+WHERE id = $1
+LIMIT 1;

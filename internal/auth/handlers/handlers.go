@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/crypto/bcrypt"
@@ -14,6 +13,7 @@ import (
 	db "github.com/kaizakin/siphon/internal/auth/sqlc"
 	"github.com/kaizakin/siphon/pkg/config"
 	"github.com/kaizakin/siphon/pkg/dto"
+	authjwt "github.com/kaizakin/siphon/pkg/jwt"
 )
 
 type Handler struct {
@@ -79,7 +79,7 @@ func (h *Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessToken, err := generateJWT(user.ID.String())
+	accessToken, err := generateJWT(user.ID.String(), user.Role)
 	if err != nil {
 		http.Error(w, "failed to generate access token", http.StatusInternalServerError)
 		return
@@ -100,7 +100,7 @@ func (h *Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 func generateRefreshToken(h *Handler, userID pgtype.UUID) (string, error) {
 	refreshToken := uuid.NewString()
 	expiresAt := pgtype.Timestamptz{
-		Time: time.Now().Add(30 * 24 * time.Hour), // 30 days
+		Time:  time.Now().Add(30 * 24 * time.Hour), // 30 days
 		Valid: true,
 	}
 
@@ -120,17 +120,8 @@ func generateRefreshToken(h *Handler, userID pgtype.UUID) (string, error) {
 	return refreshToken, nil
 }
 
-func generateJWT(userID string) (string, error) {
-	token := jwt.NewWithClaims(
-		jwt.SigningMethodHS256,
-		jwt.MapClaims{
-			"sub": userID,
-			"exp": time.Now().Add(24 * time.Hour).Unix(), // 24 Hours of expiry time.
-		},
-	)
-	var jwtsecret = []byte(config.Getenv("JWT_SECRET"))
-
-	return token.SignedString(jwtsecret)
+func generateJWT(userID string, role string) (string, error) {
+	return authjwt.GenerateToken(userID, role, config.Getenv("JWT_SECRET"), 24*time.Hour)
 }
 
 func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
@@ -138,16 +129,19 @@ func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
 	}
 
 	user, err := h.queries.GetUserByEmail(context.Background(), req.Email)
 	if err != nil {
 		http.Error(w, "User not found!", http.StatusUnauthorized)
+		return
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password))
 	if err != nil {
 		http.Error(w, "Invalid password", http.StatusUnauthorized)
+		return
 	}
 
 	refreshToken, err := generateRefreshToken(h, user.ID)
@@ -156,7 +150,7 @@ func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessToken, err := generateJWT(user.ID.String())
+	accessToken, err := generateJWT(user.ID.String(), user.Role)
 	if err != nil {
 		http.Error(w, "failed to generate access token", http.StatusInternalServerError)
 		return
@@ -190,15 +184,23 @@ func (h *Handler) RefreshHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if time.Now().After(token.ExpiresAt.Time) {
+		user, err := h.queries.GetUserByID(context.Background(), token.UserID)
+		if err != nil {
+			http.Error(w, "User not found", http.StatusInternalServerError)
+			return
+		}
+
 		refreshToken, err := generateRefreshToken(h, token.UserID)
 		if err != nil {
 			http.Error(w, "failed to generate refresh token", http.StatusInternalServerError)
+			return
 		}
-		accessToken, err := generateJWT(token.UserID.String())
+		accessToken, err := generateJWT(token.UserID.String(), user.Role)
 		if err != nil {
 			http.Error(w, "failed to generate access token", http.StatusInternalServerError)
+			return
 		}
-		
+
 		response := dto.RegisterAndLoginResponse{
 			Message:      "refreshtoken created successfully",
 			RefreshToken: refreshToken,
@@ -214,3 +216,4 @@ func (h *Handler) RefreshHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Refreshtoken already valid!"))
 	}
 }
+
