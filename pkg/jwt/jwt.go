@@ -7,6 +7,11 @@ import (
 	jwtv5 "github.com/golang-jwt/jwt/v5"
 )
 
+const (
+	Issuer   = "siphon-auth"
+	Audience = "siphon-services"
+)
+
 // Claims defines the JWT claims containing the user role and registered claims.
 type Claims struct {
 	Role string `json:"role"`
@@ -20,7 +25,10 @@ func GenerateToken(userID string, role string, secret string, duration time.Dura
 		Role: role,
 		RegisteredClaims: jwtv5.RegisteredClaims{
 			Subject:   userID,
+			Issuer:    Issuer,
+			Audience:  jwtv5.ClaimStrings{Audience},
 			IssuedAt:  jwtv5.NewNumericDate(now),
+			NotBefore: jwtv5.NewNumericDate(now),
 			ExpiresAt: jwtv5.NewNumericDate(now.Add(duration)),
 		},
 	}
@@ -31,12 +39,20 @@ func GenerateToken(userID string, role string, secret string, duration time.Dura
 
 // ParseToken parses and validates a JWT string against secret and returns the strongly typed Claims.
 func ParseToken(tokenString string, secret string) (*Claims, error) {
-	token, err := jwtv5.ParseWithClaims(tokenString, &Claims{}, func(t *jwtv5.Token) (any, error) {
-		if _, ok := t.Method.(*jwtv5.SigningMethodHMAC); !ok {
-			return nil, jwtv5.ErrSignatureInvalid
-		}
-		return []byte(secret), nil
-	})
+	token, err := jwtv5.ParseWithClaims(
+		tokenString,
+		&Claims{},
+		func(t *jwtv5.Token) (any, error) {
+			if _, ok := t.Method.(*jwtv5.SigningMethodHMAC); !ok {
+				return nil, jwtv5.ErrSignatureInvalid
+			}
+			return []byte(secret), nil
+		},
+		jwtv5.WithValidMethods([]string{"HS256"}),
+		jwtv5.WithIssuer(Issuer),
+		jwtv5.WithAudience(Audience),
+		jwtv5.WithExpirationRequired(),
+	)
 	if err != nil {
 		return nil, err
 	}

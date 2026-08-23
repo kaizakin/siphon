@@ -27,9 +27,13 @@ func SetupRouter(auth_url string, jwtSecret string, handler *handlers.IngestionH
 			// event ingestion service
 			r.Post("/event", handler.CreateEvent)
 
-			// admin / dead letter queue (event ingestion) - JWT protected
-			r.Get("/dlq/events", handler.GetDLQEvents)
-			r.Post("/dlq/events/{id}/retry", handler.RetryDLQEvent)
+			// admin / dead letter queue (event ingestion) - JWT + Admin role protected
+			r.Group(func(r chi.Router) {
+				r.Use(middleware.RequireRole("admin"))
+
+				r.Get("/dlq/events", handler.GetDLQEvents)
+				r.Post("/dlq/events/{id}/retry", handler.RetryDLQEvent)
+			})
 		})
 	})
 
