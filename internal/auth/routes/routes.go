@@ -13,6 +13,7 @@ func SetupRouter(h *handlers.Handler) *chi.Mux {
 		r.Post("/register", h.RegisterHandler)
 		r.Post("/login", h.LoginHandler)
 		r.Post("/refresh", h.RefreshHandler)
+		r.Post("/logout", h.LogoutHandler)
 	})
 
 	return r

@@ -44,12 +44,27 @@ Content-Type: application/json
 POST /api/v1/auth/refresh
 Content-Type: application/json
 
-```
+```json
 { "refresh_token": "<refresh_token from login>" }
 ```
-→ `201 Created` with a new token pair, **or** `200 OK` with the plain-text
-body `Refreshtoken already valid!` if the existing one hasn't expired yet
-(not JSON in that case — don't try to `.json()` it).
+→ `200 OK` (consistent JSON response with token rotation):
+```json
+{
+  "message": "token refreshed successfully",
+  "access_token": "...",
+  "refresh_token": "..."
+}
+```
+If expired or invalid → `401 Unauthorized`.
+
+### Logout
+POST /api/v1/auth/logout
+Content-Type: application/json
+
+```json
+{ "refresh_token": "<refresh_token from login>" }
+```
+→ `204 No Content` (revokes the refresh token)
 
 ---
 

@@ -3,10 +3,12 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/crypto/bcrypt"
 
@@ -30,9 +32,8 @@ func (h *Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	var req dto.RegisterRequest
 
 	err := json.NewDecoder(r.Body).Decode(&req)
-
 	if err != nil {
-		http.Error(w, "invalid body", http.StatusBadRequest)
+		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
 
@@ -50,17 +51,19 @@ func (h *Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		[]byte(req.Password),
 		bcrypt.DefaultCost,
 	)
+	if err != nil {
+		http.Error(w, "failed to hash password", http.StatusInternalServerError)
+		return
+	}
 
 	u := uuid.New()
-	// a uuid column in postgresql can contain NULL, but in go normal UUID type can only hold values
-	// so wrap that in a new type which has a valid flag which denotes whether this uuid has a real value or not.
 	id := pgtype.UUID{
 		Bytes: u,
 		Valid: true,
 	}
 
 	user, err := h.queries.CreateUser(
-		context.Background(),
+		r.Context(),
 		db.CreateUserParams{
 			ID:           id,
 			Email:        req.Email,
@@ -69,13 +72,18 @@ func (h *Handler) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		},
 	)
 	if err != nil {
-		http.Error(w, "Failed to create user", http.StatusInternalServerError)
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			http.Error(w, "email already exists", http.StatusConflict)
+			return
+		}
+		http.Error(w, "failed to create user", http.StatusInternalServerError)
 		return
 	}
 
 	refreshToken, err := generateRefreshToken(h, user.ID)
 	if err != nil {
-		http.Error(w, "Failed to generate refresh token", http.StatusInternalServerError)
+		http.Error(w, "failed to generate refresh token", http.StatusInternalServerError)
 		return
 	}
 
@@ -132,7 +140,7 @@ func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.queries.GetUserByEmail(context.Background(), req.Email)
+	user, err := h.queries.GetUserByEmail(r.Context(), req.Email)
 	if err != nil {
 		http.Error(w, "User not found!", http.StatusUnauthorized)
 		return
@@ -172,48 +180,72 @@ func (h *Handler) RefreshHandler(w http.ResponseWriter, r *http.Request) {
 	var req dto.RefreshRequest
 
 	err := json.NewDecoder(r.Body).Decode(&req)
-	if err != nil {
-		http.Error(w, "Failed to decode Body", http.StatusInternalServerError)
+	if err != nil || req.RefreshToken == "" {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	token, err := h.queries.GetRefreshToken(context.Background(), req.RefreshToken)
+	token, err := h.queries.GetRefreshToken(r.Context(), req.RefreshToken)
 	if err != nil {
-		http.Error(w, "Refreshtoken doesn't exist", http.StatusBadRequest)
+		http.Error(w, "Invalid or nonexistent refresh token", http.StatusUnauthorized)
 		return
 	}
 
-	if time.Now().After(token.ExpiresAt.Time) {
-		user, err := h.queries.GetUserByID(context.Background(), token.UserID)
-		if err != nil {
-			http.Error(w, "User not found", http.StatusInternalServerError)
-			return
-		}
-
-		refreshToken, err := generateRefreshToken(h, token.UserID)
-		if err != nil {
-			http.Error(w, "failed to generate refresh token", http.StatusInternalServerError)
-			return
-		}
-		accessToken, err := generateJWT(token.UserID.String(), user.Role)
-		if err != nil {
-			http.Error(w, "failed to generate access token", http.StatusInternalServerError)
-			return
-		}
-
-		response := dto.RegisterAndLoginResponse{
-			Message:      "refreshtoken created successfully",
-			RefreshToken: refreshToken,
-			AccessToken:  accessToken,
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-
-		json.NewEncoder(w).Encode(response)
-	} else {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Refreshtoken already valid!"))
+	// When expired, delete stale token and reject
+	if !token.ExpiresAt.Valid || time.Now().After(token.ExpiresAt.Time) {
+		_ = h.queries.DeleteRefreshToken(r.Context(), req.RefreshToken)
+		http.Error(w, "Refresh token expired", http.StatusUnauthorized)
+		return
 	}
+
+	user, err := h.queries.GetUserByID(r.Context(), token.UserID)
+	if err != nil {
+		http.Error(w, "User not found", http.StatusUnauthorized)
+		return
+	}
+
+	// Rotation: delete the old refresh token
+	_ = h.queries.DeleteRefreshToken(r.Context(), req.RefreshToken)
+
+	// Create a new rotated refresh token
+	newRefreshToken, err := generateRefreshToken(h, token.UserID)
+	if err != nil {
+		http.Error(w, "failed to generate refresh token", http.StatusInternalServerError)
+		return
+	}
+
+	accessToken, err := generateJWT(token.UserID.String(), user.Role)
+	if err != nil {
+		http.Error(w, "failed to generate access token", http.StatusInternalServerError)
+		return
+	}
+
+	response := dto.RegisterAndLoginResponse{
+		Message:      "token refreshed successfully",
+		RefreshToken: newRefreshToken,
+		AccessToken:  accessToken,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	json.NewEncoder(w).Encode(response)
 }
 
+func (h *Handler) LogoutHandler(w http.ResponseWriter, r *http.Request) {
+	var req dto.LogoutRequest
+
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil || req.RefreshToken == "" {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	err = h.queries.DeleteRefreshToken(r.Context(), req.RefreshToken)
+	if err != nil {
+		http.Error(w, "Failed to revoke refresh token", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
