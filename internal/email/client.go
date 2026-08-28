@@ -40,10 +40,11 @@ func (r *ResendClient) Send(to []string, subject string, html string) error {
 
 	sent, err := r.client.Emails.Send(params)
 	if err != nil {
-		log.Fatalf("failed to send email: %v", err)
+		log.Printf("failed to send email: %v", err)
+		return err
 	}
 
 	log.Printf("email sent: %s", sent.Id)
 
-	return err
+	return nil
 }

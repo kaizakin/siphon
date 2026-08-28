@@ -17,10 +17,7 @@ type Config struct {
 }
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error reading .env file")
-	}
+	_ = godotenv.Load()
 
 	cfg := Config{
 		resend_api_key: config.Getenv("RESEND_API_KEY"),

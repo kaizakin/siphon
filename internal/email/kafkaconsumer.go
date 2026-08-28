@@ -3,7 +3,7 @@ package email
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"log"
 
 	"github.com/segmentio/kafka-go"
 )
@@ -37,17 +37,18 @@ func (c *Consumer) Start(ctx context.Context) error {
 
 		var event Event
 
-		fmt.Printf("Received msg from kafka: %s\n", string(msg.Value))
+		log.Printf("Received msg from kafka (key=%s): %s", string(msg.Key), string(msg.Value))
 
 		err = json.Unmarshal(msg.Value, &event)
 		if err != nil {
+			log.Printf("failed to unmarshal kafka message: %v", err)
 			continue
 		}
 
 		err = c.router.Handle(ctx, event)
 		if err != nil {
-			// TODO: retry logic
-			// publish to DLQ
+			log.Printf("failed to process event %q (id=%s): %v", event.EventType, event.EventID, err)
+			// TODO: retry logic / publish to DLQ
 			continue
 		}
 	}

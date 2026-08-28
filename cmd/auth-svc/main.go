@@ -21,10 +21,7 @@ type Config struct {
 }
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error reading .env file")
-	}
+	_ = godotenv.Load()
 
 	cfg := Config{
 		Port: config.Getenv("PORT"),

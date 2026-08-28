@@ -46,7 +46,10 @@ func NewTemplateManager() (*TemplateManager, error) {
 }
 
 func (t *TemplateManager) Render(name string, data any) (string, error) {
-	tmpl := t.templates[name]
+	tmpl, ok := t.templates[name]
+	if !ok || tmpl == nil {
+		return "", fmt.Errorf("template %q not found", name)
+	}
 
 	var buf bytes.Buffer
 	err := tmpl.ExecuteTemplate(&buf, "layout", data)

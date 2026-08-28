@@ -18,9 +18,9 @@ type IngestionHandler struct {
 }
 
 type createEventRequest struct {
-	EventType string  `json:"event_type"`
-	Payload map[string]any `json:"payload"`
-	Recipient string `json:"recipient"`
+	EventType string         `json:"event_type"`
+	Payload   map[string]any `json:"payload"`
+	Recipient string         `json:"recipient"`
 }
 
 func NewIngestionHandler(client ingesv1.EventIngestionServiceClient) *IngestionHandler {
@@ -35,24 +35,46 @@ func (h *IngestionHandler) CreateEvent(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		http.Error(w, "failed to decode req body", http.StatusInternalServerError)
+		http.Error(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	payloadStruct, _ := structpb.NewStruct(req.Payload)
+	if req.EventType == "" {
+		http.Error(w, "event_type is required", http.StatusBadRequest)
+		return
+	}
 
-	resp, err := h.Client.IngestEvent(ctx, 
+	if req.Recipient == "" {
+		http.Error(w, "recipient is required", http.StatusBadRequest)
+		return
+	}
+
+	if req.Payload == nil {
+		req.Payload = make(map[string]any)
+	}
+
+	payloadStruct, err := structpb.NewStruct(req.Payload)
+	if err != nil {
+		http.Error(w, "failed to parse payload structure", http.StatusBadRequest)
+		return
+	}
+
+	resp, err := h.Client.IngestEvent(ctx,
 		&ingesv1.IngestEventRequest{
-			EventId: uuid.NewString(),
-			EventType: req.EventType,
-			Source: "api-gateway",
-			Version: grpcVersion,
-			Timestamp: time.Now().UTC().Format(time.RFC3339),
+			EventId:       uuid.NewString(),
+			EventType:     req.EventType,
+			Source:        "api-gateway",
+			Version:       grpcVersion,
+			Timestamp:     time.Now().UTC().Format(time.RFC3339),
 			CorrelationId: uuid.NewString(),
-			Payload: payloadStruct,
-			Recipient: req.Recipient,
+			Payload:       payloadStruct,
+			Recipient:     req.Recipient,
 		},
 	)
+	if err != nil {
+		http.Error(w, "failed to ingest event: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -61,7 +83,7 @@ func (h *IngestionHandler) CreateEvent(w http.ResponseWriter, r *http.Request) {
 }
 
 type getdlqeventsRequest struct {
-	Page int32 `json:"page"`
+	Page  int32 `json:"page"`
 	Limit int32 `json:"limit"`
 }
 
@@ -69,20 +91,26 @@ func (h *IngestionHandler) GetDLQEvents(w http.ResponseWriter, r *http.Request) 
 	ctx := r.Context()
 	var req getdlqeventsRequest
 
-	err:= json.NewDecoder(r.Body).Decode(&req)
-	if err != nil {
-		http.Error(w, "Failed to parse the request", http.StatusInternalServerError)
-		return
+	if r.Body != nil && r.ContentLength > 0 {
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			http.Error(w, "invalid request body", http.StatusBadRequest)
+			return
+		}
 	}
 
-	resp, err := h.Client.ListDLQEvents(ctx, 
+	if req.Limit <= 0 {
+		req.Limit = 20
+	}
+
+	resp, err := h.Client.ListDLQEvents(ctx,
 		&ingesv1.ListDLQEventsRequest{
-			Page: req.Page,
+			Page:  req.Page,
 			Limit: req.Limit,
 		},
 	)
 	if err != nil {
-		http.Error(w, "grpc request failed", http.StatusInternalServerError)
+		http.Error(w, "failed to fetch DLQ events: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -95,6 +123,10 @@ func (h *IngestionHandler) GetDLQEvents(w http.ResponseWriter, r *http.Request) 
 func (h *IngestionHandler) RetryDLQEvent(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	id := chi.URLParam(r, "id")
+	if id == "" {
+		http.Error(w, "event id is required", http.StatusBadRequest)
+		return
+	}
 
 	resp, err := h.Client.RetryDLQEvent(ctx,
 		&ingesv1.RetryDLQEventRequest{
@@ -102,12 +134,12 @@ func (h *IngestionHandler) RetryDLQEvent(w http.ResponseWriter, r *http.Request)
 		},
 	)
 	if err != nil {
-		http.Error(w, "grpc request failed", http.StatusInternalServerError)
+		http.Error(w, "failed to retry DLQ event: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
-	json.NewEncoder(w).Encode(resp)		
+	json.NewEncoder(w).Encode(resp)
 }

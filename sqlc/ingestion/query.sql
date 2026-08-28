@@ -8,6 +8,7 @@ INSERT INTO outbox_events (
     correlation_id,
     metadata,
     payload,
+    recipient,
     status,
     error_message
 )
@@ -20,8 +21,9 @@ VALUES (
     $6,
     $7,
     $8,
+    $9,
     'pending',
-    $9
+    $10
 )
 RETURNING *;
 

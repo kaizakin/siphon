@@ -75,36 +75,54 @@ func (s *IngestionServer) publishToKafka(ctx context.Context, req *ingestionv1.I
 }
 
 func (s *IngestionServer) writeToDLQ(event *ingestionv1.IngestEventRequest, kafkaerror error) {
-	payloadbytes, err := json.Marshal(event.GetPayload().AsMap())
-	if err != nil {
-		log.Fatal(err)
+	var payloadMap map[string]any
+	if event.GetPayload() != nil {
+		payloadMap = event.GetPayload().AsMap()
+	} else {
+		payloadMap = make(map[string]any)
 	}
 
-	metadatabytes, err := json.Marshal(event.GetMetadata())
+	payloadbytes, err := json.Marshal(payloadMap)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("failed to marshal payload for DLQ: %v", err)
+		return
+	}
+
+	metadata := event.GetMetadata()
+	if metadata == nil {
+		metadata = make(map[string]string)
+	}
+	metadatabytes, err := json.Marshal(metadata)
+	if err != nil {
+		log.Printf("failed to marshal metadata for DLQ: %v", err)
+		return
 	}
 
 	var eventid pgtype.UUID
-	var corrlationid pgtype.UUID
+	var correlationid pgtype.UUID
 
-	err = eventid.Scan(event.GetEventId())
-	if err != nil {
-		log.Fatal(err)
+	if err := eventid.Scan(event.GetEventId()); err != nil {
+		log.Printf("invalid event_id %q for DLQ: %v", event.GetEventId(), err)
+		return
 	}
-	err = corrlationid.Scan(event.GetCorrelationId())
-	if err != nil {
-		log.Fatal(err)
+	if err := correlationid.Scan(event.GetCorrelationId()); err != nil {
+		log.Printf("invalid correlation_id %q for DLQ: %v", event.GetCorrelationId(), err)
+		return
 	}
 
-	paresedTime, err := time.Parse(time.RFC3339, event.Timestamp)
+	parsedTime, err := time.Parse(time.RFC3339, event.Timestamp)
 	if err != nil {
-		log.Fatal(err)
+		parsedTime = time.Now().UTC()
 	}
 
 	ts := pgtype.Timestamptz{
-		Time:  paresedTime,
+		Time:  parsedTime,
 		Valid: true,
+	}
+
+	recipient := pgtype.Text{
+		String: event.Recipient,
+		Valid:  event.Recipient != "",
 	}
 
 	_, err = s.Queries.CreateOutboxEvent(
@@ -115,9 +133,10 @@ func (s *IngestionServer) writeToDLQ(event *ingestionv1.IngestEventRequest, kafk
 			Source:        event.Source,
 			Version:       event.Version,
 			Timestamp:     ts,
-			CorrelationID: corrlationid,
+			CorrelationID: correlationid,
 			Metadata:      metadatabytes,
 			Payload:       payloadbytes,
+			Recipient:     recipient,
 			ErrorMessage: pgtype.Text{
 				String: kafkaerror.Error(),
 				Valid:  true,
@@ -125,7 +144,7 @@ func (s *IngestionServer) writeToDLQ(event *ingestionv1.IngestEventRequest, kafk
 		},
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("failed to insert event %s into DLQ: %v", event.GetEventId(), err)
 	}
 }
 
