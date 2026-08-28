@@ -37,7 +37,7 @@ func (c *Consumer) Start(ctx context.Context) error {
 
 		var event Event
 
-		log.Printf("Received msg from kafka (key=%s): %s", string(msg.Key), string(msg.Value))
+		log.Printf("[%s] processing event %s for recipient=%s user_id=%s source=%s", event.CorrelationID, event.EventID, event.Recipient, event.Metadata["user_id"], event.Source)
 
 		err = json.Unmarshal(msg.Value, &event)
 		if err != nil {

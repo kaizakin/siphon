@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	ingesv1 "github.com/kaizakin/siphon/gen/ingestion/v1"
+	"github.com/kaizakin/siphon/internal/gateway/middleware"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -59,6 +60,18 @@ func (h *IngestionHandler) CreateEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userID, ok := middleware.GetUserID(r)
+	if !ok {
+		http.Error(w, "User unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	userRole, ok := middleware.GetUserRole(r)
+	if !ok {
+		http.Error(w, "User role not found", http.StatusUnauthorized)
+		return
+	}
+
 	resp, err := h.Client.IngestEvent(ctx,
 		&ingesv1.IngestEventRequest{
 			EventId:       uuid.NewString(),
@@ -69,6 +82,10 @@ func (h *IngestionHandler) CreateEvent(w http.ResponseWriter, r *http.Request) {
 			CorrelationId: uuid.NewString(),
 			Payload:       payloadStruct,
 			Recipient:     req.Recipient,
+			Metadata: map[string]string{
+				"user_id":   userID,
+				"user_role": userRole,
+			},
 		},
 	)
 	if err != nil {
