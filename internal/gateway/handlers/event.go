@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	ingesv1 "github.com/kaizakin/siphon/gen/ingestion/v1"
 	"github.com/kaizakin/siphon/internal/gateway/middleware"
@@ -72,9 +71,18 @@ func (h *IngestionHandler) CreateEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Extract optional client-provided Idempotency-Key
+	eventID := r.Header.Get("Idempotency-Key")
+	if eventID == "" {
+		eventID = uuid.NewString()
+	} else if _, err := uuid.Parse(eventID); err != nil {
+		http.Error(w, "invalid Idempotency-Key header: must be a valid UUID", http.StatusBadRequest)
+		return
+	}
+
 	resp, err := h.Client.IngestEvent(ctx,
 		&ingesv1.IngestEventRequest{
-			EventId:       uuid.NewString(),
+			EventId:       eventID,
 			EventType:     req.EventType,
 			Source:        "api-gateway",
 			Version:       grpcVersion,
@@ -127,7 +135,7 @@ func (h *IngestionHandler) GetDLQEvents(w http.ResponseWriter, r *http.Request) 
 		},
 	)
 	if err != nil {
-		http.Error(w, "failed to fetch DLQ events: "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "failed to get DLQ events: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -137,21 +145,27 @@ func (h *IngestionHandler) GetDLQEvents(w http.ResponseWriter, r *http.Request) 
 	json.NewEncoder(w).Encode(resp)
 }
 
+type retryEventRequest struct {
+	ID string `json:"id"`
+}
+
 func (h *IngestionHandler) RetryDLQEvent(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	id := chi.URLParam(r, "id")
-	if id == "" {
+
+	eventID := r.PathValue("id")
+	if eventID == "" {
 		http.Error(w, "event id is required", http.StatusBadRequest)
 		return
 	}
 
-	resp, err := h.Client.RetryDLQEvent(ctx,
+	resp, err := h.Client.RetryDLQEvent(
+		ctx,
 		&ingesv1.RetryDLQEventRequest{
-			EventId: id,
+			EventId: eventID,
 		},
 	)
 	if err != nil {
-		http.Error(w, "failed to retry DLQ event: "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "failed to retry dlq event: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 

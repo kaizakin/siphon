@@ -25,6 +25,10 @@ VALUES (
     'pending',
     $10
 )
+ON CONFLICT (event_id) DO UPDATE
+SET
+    error_message = EXCLUDED.error_message,
+    status = 'pending'
 RETURNING *;
 
 -- name: GetPendingOutboxEvents :many

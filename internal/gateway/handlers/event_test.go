@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	ingesv1 "github.com/kaizakin/siphon/gen/ingestion/v1"
+	"github.com/kaizakin/siphon/internal/gateway/middleware"
 	"google.golang.org/grpc"
 )
 
@@ -28,26 +29,46 @@ func TestCreateEvent_ErrorHandling(t *testing.T) {
 	tests := []struct {
 		name           string
 		body           string
+		headers        map[string]string
+		withAuth       bool
 		expectedStatus int
 	}{
 		{
+			name:           "unauthorized request without context",
+			body:           `{"event_type": "order_success", "recipient": "user@example.com", "payload": {}}`,
+			withAuth:       false,
+			expectedStatus: http.StatusUnauthorized,
+		},
+		{
 			name:           "invalid json body",
 			body:           `{invalid-json}`,
+			withAuth:       true,
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "missing event_type",
 			body:           `{"recipient": "user@example.com", "payload": {}}`,
+			withAuth:       true,
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "missing recipient",
 			body:           `{"event_type": "order_success", "payload": {}}`,
+			withAuth:       true,
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name:           "valid event request",
+			name:           "invalid idempotency key format",
+			body:           `{"event_type": "order_success", "recipient": "user@example.com", "payload": {}}`,
+			headers:        map[string]string{"Idempotency-Key": "not-a-uuid"},
+			withAuth:       true,
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "valid event request with valid idempotency key",
 			body:           `{"event_type": "order_success", "recipient": "user@example.com", "payload": {"Name": "Test"}}`,
+			headers:        map[string]string{"Idempotency-Key": "123e4567-e89b-12d3-a456-426614174000"},
+			withAuth:       true,
 			expectedStatus: http.StatusOK,
 		},
 	}
@@ -57,8 +78,17 @@ func TestCreateEvent_ErrorHandling(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodPost, "/api/v1/event", bytes.NewBufferString(tt.body))
-			rec := httptest.NewRecorder()
+			for k, v := range tt.headers {
+				req.Header.Set(k, v)
+			}
 
+			if tt.withAuth {
+				ctx := context.WithValue(req.Context(), middleware.UserIDContextKey, "123e4567-e89b-12d3-a456-426614174000")
+				ctx = context.WithValue(ctx, middleware.RoleContextKey, "user")
+				req = req.WithContext(ctx)
+			}
+
+			rec := httptest.NewRecorder()
 			handler.CreateEvent(rec, req)
 
 			if rec.Code != tt.expectedStatus {

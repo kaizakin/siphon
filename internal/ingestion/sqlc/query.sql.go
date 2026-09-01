@@ -38,6 +38,10 @@ VALUES (
     'pending',
     $10
 )
+ON CONFLICT (event_id) DO UPDATE
+SET
+    error_message = EXCLUDED.error_message,
+    status = 'pending'
 RETURNING event_id, event_type, source, version, timestamp, correlation_id, metadata, payload, status, created_at, processed_at, error_message, recipient
 `
 

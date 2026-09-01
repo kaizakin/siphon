@@ -1,9 +1,9 @@
 -- Sliding window rate limiter lua script
 
--- KEYS[1]: rate limit key 
+-- KEYS[1]: rate limit key
 -- ARGV[1]: current timestamp in ms
--- ARGV[2]: window size in ms 
--- ARGV[3]: max allowed requests 
+-- ARGV[2]: window size in ms
+-- ARGV[3]: max allowed requests
 
 local key = KEYS[1]
 local now = tonumber(ARGV[1])
@@ -26,4 +26,3 @@ if currentRequests < limit then
 else
     return {0, 0}
 end
-

@@ -1,4 +1,4 @@
-package grpcserver
+package grpc
 
 import (
 	"context"
@@ -7,46 +7,48 @@ import (
 	"log"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+	ingestionv1 "github.com/kaizakin/siphon/gen/ingestion/v1"
+	"github.com/kaizakin/siphon/internal/ingestion/sqlc"
 	"github.com/segmentio/kafka-go"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
-
-	ingestionv1 "github.com/kaizakin/siphon/gen/ingestion/v1"
-	"github.com/kaizakin/siphon/internal/ingestion/sqlc"
-	db "github.com/kaizakin/siphon/internal/ingestion/sqlc"
 )
+
+type Config struct {
+	Port       string
+	Kafka_url  string
+	Topic_name string
+}
 
 type IngestionServer struct {
 	ingestionv1.UnimplementedEventIngestionServiceServer
-	writer     *kafka.Writer
+	Handler *Handler
+
+	writer *kafka.Writer
+	*sqlc.Queries
+
 	eventQueue chan *ingestionv1.IngestEventRequest
-	Handler    // embed handler to the IngestionServer
 }
 
-func NewIngestionServer(addr string, pgxhandler *db.Queries) *IngestionServer {
+func NewIngestionServer(queries *sqlc.Queries, writer *kafka.Writer, bufferSize int, workerCount int) *IngestionServer {
 	s := &IngestionServer{
-		writer: &kafka.Writer{
-			Addr:     kafka.TCP(addr),
-			Topic:    "events",
-			Balancer: &kafka.LeastBytes{},
-		},
-		eventQueue: make(chan *ingestionv1.IngestEventRequest, 10000), // buffered channel that can hold 10,000 requests.
-		Handler: Handler{
-			Queries: pgxhandler,
-		},
+		Handler:    &Handler{Queries: queries},
+		Queries:    queries,
+		writer:     writer,
+		eventQueue: make(chan *ingestionv1.IngestEventRequest, bufferSize),
 	}
 
-	for i := 0; i < 10; i++ {
-		go s.kafkaWorker() // spawn 10 workers to concurrently utilize the producer resources
+	for i := 0; i < workerCount; i++ {
+		go s.kafkaWorker()
 	}
 
 	return s
 }
 
-// kafka worker keeps on writing messages from the channel to kafka
 func (s *IngestionServer) kafkaWorker() {
 	for req := range s.eventQueue {
 		if err := s.publishToKafka(context.Background(), req); err != nil {
@@ -148,9 +150,20 @@ func (s *IngestionServer) writeToDLQ(event *ingestionv1.IngestEventRequest, kafk
 	}
 }
 
-// ingestevent sends an optimistic acknowledgement as soon as the event reaches the buffered channel
-// this works because the worker handles the event producing & dlq writes
+// IngestEvent validates UUID event identifiers and places the request into the worker queue.
 func (s *IngestionServer) IngestEvent(ctx context.Context, req *ingestionv1.IngestEventRequest) (*ingestionv1.IngestEventResponse, error) {
+	if req.EventId == "" {
+		req.EventId = uuid.NewString()
+	} else if _, err := uuid.Parse(req.EventId); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid event_id format (must be a valid UUID): %v", err)
+	}
+
+	if req.CorrelationId == "" {
+		req.CorrelationId = uuid.NewString()
+	} else if _, err := uuid.Parse(req.CorrelationId); err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid correlation_id format (must be a valid UUID): %v", err)
+	}
+
 	select {
 	case s.eventQueue <- req:
 		return &ingestionv1.IngestEventResponse{
