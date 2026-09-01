@@ -42,7 +42,7 @@ ON CONFLICT (event_id) DO UPDATE
 SET
     error_message = EXCLUDED.error_message,
     status = 'pending'
-RETURNING event_id, event_type, source, version, timestamp, correlation_id, metadata, payload, status, created_at, processed_at, error_message, recipient
+RETURNING event_id, event_type, source, version, timestamp, correlation_id, metadata, payload, status, created_at, processed_at, error_message, recipient, retry_count, next_retry_at, max_retries
 `
 
 type CreateOutboxEventParams struct {
@@ -86,12 +86,62 @@ func (q *Queries) CreateOutboxEvent(ctx context.Context, arg CreateOutboxEventPa
 		&i.ProcessedAt,
 		&i.ErrorMessage,
 		&i.Recipient,
+		&i.RetryCount,
+		&i.NextRetryAt,
+		&i.MaxRetries,
 	)
 	return i, err
 }
 
+const getEventsReadyForRetry = `-- name: GetEventsReadyForRetry :many
+SELECT event_id, event_type, source, version, timestamp, correlation_id, metadata, payload, status, created_at, processed_at, error_message, recipient, retry_count, next_retry_at, max_retries
+FROM outbox_events
+WHERE status = 'pending'
+  AND next_retry_at <= NOW()
+  AND retry_count < max_retries
+ORDER BY next_retry_at ASC
+LIMIT $1
+`
+
+func (q *Queries) GetEventsReadyForRetry(ctx context.Context, limit int32) ([]OutboxEvent, error) {
+	rows, err := q.db.Query(ctx, getEventsReadyForRetry, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []OutboxEvent
+	for rows.Next() {
+		var i OutboxEvent
+		if err := rows.Scan(
+			&i.EventID,
+			&i.EventType,
+			&i.Source,
+			&i.Version,
+			&i.Timestamp,
+			&i.CorrelationID,
+			&i.Metadata,
+			&i.Payload,
+			&i.Status,
+			&i.CreatedAt,
+			&i.ProcessedAt,
+			&i.ErrorMessage,
+			&i.Recipient,
+			&i.RetryCount,
+			&i.NextRetryAt,
+			&i.MaxRetries,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getOutboxEventByEventID = `-- name: GetOutboxEventByEventID :one
-SELECT event_id, event_type, source, version, timestamp, correlation_id, metadata, payload, status, created_at, processed_at, error_message, recipient
+SELECT event_id, event_type, source, version, timestamp, correlation_id, metadata, payload, status, created_at, processed_at, error_message, recipient, retry_count, next_retry_at, max_retries
 FROM outbox_events
 WHERE event_id = $1
 `
@@ -113,12 +163,15 @@ func (q *Queries) GetOutboxEventByEventID(ctx context.Context, eventID pgtype.UU
 		&i.ProcessedAt,
 		&i.ErrorMessage,
 		&i.Recipient,
+		&i.RetryCount,
+		&i.NextRetryAt,
+		&i.MaxRetries,
 	)
 	return i, err
 }
 
 const getPendingOutboxEvents = `-- name: GetPendingOutboxEvents :many
-SELECT event_id, event_type, source, version, timestamp, correlation_id, metadata, payload, status, created_at, processed_at, error_message, recipient
+SELECT event_id, event_type, source, version, timestamp, correlation_id, metadata, payload, status, created_at, processed_at, error_message, recipient, retry_count, next_retry_at, max_retries
 FROM outbox_events
 WHERE status = 'pending'
 ORDER BY created_at ASC
@@ -154,6 +207,9 @@ func (q *Queries) GetPendingOutboxEvents(ctx context.Context, arg GetPendingOutb
 			&i.ProcessedAt,
 			&i.ErrorMessage,
 			&i.Recipient,
+			&i.RetryCount,
+			&i.NextRetryAt,
+			&i.MaxRetries,
 		); err != nil {
 			return nil, err
 		}
@@ -193,5 +249,26 @@ WHERE event_id = $1
 
 func (q *Queries) MarkOutboxEventProcessed(ctx context.Context, eventID pgtype.UUID) error {
 	_, err := q.db.Exec(ctx, markOutboxEventProcessed, eventID)
+	return err
+}
+
+const recordRetryFailure = `-- name: RecordRetryFailure :exec
+UPDATE outbox_events
+SET
+  retry_count = retry_count + 1,
+  next_retry_at = $2,
+  error_message = $3,
+  status = CASE WHEN retry_count + 1 >= max_retries THEN 'failed' ELSE 'pending' END
+WHERE event_id = $1
+`
+
+type RecordRetryFailureParams struct {
+	EventID      pgtype.UUID        `db:"event_id" json:"event_id"`
+	NextRetryAt  pgtype.Timestamptz `db:"next_retry_at" json:"next_retry_at"`
+	ErrorMessage pgtype.Text        `db:"error_message" json:"error_message"`
+}
+
+func (q *Queries) RecordRetryFailure(ctx context.Context, arg RecordRetryFailureParams) error {
+	_, err := q.db.Exec(ctx, recordRetryFailure, arg.EventID, arg.NextRetryAt, arg.ErrorMessage)
 	return err
 }

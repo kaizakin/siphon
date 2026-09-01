@@ -22,6 +22,9 @@ type OutboxEvent struct {
 	ProcessedAt   pgtype.Timestamptz `db:"processed_at" json:"processed_at"`
 	ErrorMessage  pgtype.Text        `db:"error_message" json:"error_message"`
 	Recipient     pgtype.Text        `db:"recipient" json:"recipient"`
+	RetryCount    int32              `db:"retry_count" json:"retry_count"`
+	NextRetryAt   pgtype.Timestamptz `db:"next_retry_at" json:"next_retry_at"`
+	MaxRetries    int32              `db:"max_retries" json:"max_retries"`
 }
 
 type RefreshToken struct {

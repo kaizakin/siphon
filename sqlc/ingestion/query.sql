@@ -57,3 +57,21 @@ WHERE event_id = $1;
 SELECT *
 FROM outbox_events
 WHERE event_id = $1;
+
+-- name: GetEventsReadyForRetry :many
+SELECT *
+FROM outbox_events
+WHERE status = 'pending'
+  AND next_retry_at <= NOW()
+  AND retry_count < max_retries
+ORDER BY next_retry_at ASC
+LIMIT $1;
+
+-- name: RecordRetryFailure :exec
+UPDATE outbox_events
+SET
+  retry_count = retry_count + 1,
+  next_retry_at = $2,
+  error_message = $3,
+  status = CASE WHEN retry_count + 1 >= max_retries THEN 'failed' ELSE 'pending' END
+WHERE event_id = $1;

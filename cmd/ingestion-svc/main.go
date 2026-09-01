@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc"
 
 	ingestionv1 "github.com/kaizakin/siphon/gen/ingestion/v1"
+	"github.com/kaizakin/siphon/internal/ingestion/dlq"
 	grpcserver "github.com/kaizakin/siphon/internal/ingestion/grpc"
 	"github.com/kaizakin/siphon/internal/ingestion/sqlc"
 	"github.com/kaizakin/siphon/pkg/config"
@@ -45,6 +46,13 @@ func main() {
 		Balancer: &kafka.LeastBytes{},
 	}
 	defer writer.Close()
+
+	// Launch background DLQ retry worker with graceful cancellation context
+	workerCtx, cancelWorker := context.WithCancel(context.Background())
+	defer cancelWorker()
+
+	retryWorker := dlq.NewRetryWorker(queries, writer)
+	go retryWorker.Start(workerCtx)
 
 	lis, err := net.Listen("tcp", ":"+cfg.Port)
 	if err != nil {

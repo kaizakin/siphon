@@ -11,8 +11,8 @@
 - [x] Enforce idempotency with stable client-provided idempotency keys or event IDs
 - [ ] Store accepted events before publishing to Kafka
 - [ ] Convert `outbox_events` into a real transactional outbox, or rename/split it into a true DLQ table
-- [ ] Add automatic retry policy for transient Kafka publish failures
-- [ ] Add retry count and last retry timestamp to failed events
+- [x] Add automatic retry policy for transient Kafka publish failures
+- [x] Add retry count and last retry timestamp to failed events
 - [ ] Make Email service idempotent by storing processed event IDs
 - [ ] Prevent duplicate emails on Kafka redelivery
 - [ ] Add bulk email sending behavior where appropriate
