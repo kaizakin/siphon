@@ -11,6 +11,19 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countPendingOutboxEvents = `-- name: CountPendingOutboxEvents :one
+SELECT COUNT(*)
+FROM outbox_events
+WHERE status = 'pending'
+`
+
+func (q *Queries) CountPendingOutboxEvents(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countPendingOutboxEvents)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createOutboxEvent = `-- name: CreateOutboxEvent :one
 INSERT INTO outbox_events (
     event_id,

@@ -39,6 +39,11 @@ ORDER BY created_at ASC
 LIMIT $1
 OFFSET $2;
 
+-- name: CountPendingOutboxEvents :one
+SELECT COUNT(*)
+FROM outbox_events
+WHERE status = 'pending';
+
 -- name: MarkOutboxEventProcessed :exec
 UPDATE outbox_events
 SET

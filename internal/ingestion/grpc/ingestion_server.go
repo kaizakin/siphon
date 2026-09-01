@@ -177,9 +177,7 @@ func (s *IngestionServer) IngestEvent(ctx context.Context, req *ingestionv1.Inge
 }
 
 func (s *IngestionServer) ListDLQEvents(ctx context.Context, req *ingestionv1.ListDLQEventsRequest) (*ingestionv1.ListDLQEventsResponse, error) {
-
-	// method gets promoted so can be accessed like this
-	events, err := s.Queries.GetPendingOutboxEvents(context.Background(),
+	events, err := s.Queries.GetPendingOutboxEvents(ctx,
 		sqlc.GetPendingOutboxEventsParams{
 			Limit:  req.GetLimit(),
 			Offset: req.GetPage(),
@@ -189,16 +187,32 @@ func (s *IngestionServer) ListDLQEvents(ctx context.Context, req *ingestionv1.Li
 		return nil, err
 	}
 
+	totalCount, err := s.Queries.CountPendingOutboxEvents(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	dlqEvents := make([]*ingestionv1.DLQEvent, 0, len(events))
 
 	for _, e := range events {
+		var payloadMap map[string]interface{}
+		var payloadStruct *structpb.Struct
+
+		if len(e.Payload) > 0 {
+			if err := json.Unmarshal(e.Payload, &payloadMap); err == nil {
+				payloadStruct, _ = structpb.NewStruct(payloadMap)
+			}
+		}
+
 		dlqEvents = append(dlqEvents, &ingestionv1.DLQEvent{
 			EventId:       e.EventID.String(),
 			CorrelationId: e.CorrelationID.String(),
 			EventType:     e.EventType,
 			Source:        e.Source,
 			Version:       e.Version,
+			Payload:       payloadStruct,
 			FailureReason: e.ErrorMessage.String,
+			RetryCount:    e.RetryCount,
 			FailedAt:      e.CreatedAt.Time.String(),
 		})
 	}
@@ -207,7 +221,7 @@ func (s *IngestionServer) ListDLQEvents(ctx context.Context, req *ingestionv1.Li
 		Events:     dlqEvents,
 		Page:       req.GetPage(),
 		Limit:      req.GetLimit(),
-		TotalCount: int64(len(events)),
+		TotalCount: totalCount,
 	}
 
 	return response, nil
