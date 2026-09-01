@@ -3,13 +3,15 @@ package routes
 import (
 	"net/http/httputil"
 	"net/url"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/kaizakin/siphon/internal/gateway/handlers"
 	"github.com/kaizakin/siphon/internal/gateway/middleware"
+	"github.com/kaizakin/siphon/internal/ratelimiter"
 )
 
-func SetupRouter(auth_url string, jwtSecret string, handler *handlers.IngestionHandler) *chi.Mux {
+func SetupRouter(auth_url string, jwtSecret string, handler *handlers.IngestionHandler, ratelimiter *ratelimiter.Limiter) *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Route("/api/v1/", func(r chi.Router) {
@@ -24,8 +26,8 @@ func SetupRouter(auth_url string, jwtSecret string, handler *handlers.IngestionH
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.RequireJWT(jwtSecret))
 
-			// event ingestion service
-			r.Post("/event", handler.CreateEvent)
+			// 100 ingestions per-minute per user
+			r.With(middleware.RateLimitByUser(ratelimiter, 100, time.Minute)).Post("/event", handler.CreateEvent)
 
 			// admin / dead letter queue (event ingestion) - JWT + Admin role protected
 			r.Group(func(r chi.Router) {
