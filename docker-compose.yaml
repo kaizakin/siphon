@@ -1,18 +1,156 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-siphon}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-siphon}
+      POSTGRES_DB: ${POSTGRES_DB:-siphon}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-siphon} -d ${POSTGRES_DB:-siphon}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   kafka:
     image: apache/kafka:4.1.1
     container_name: kafka
     ports:
-      - "9092:9092"
+      - "9094:9094" # host access; containers on this network use kafka:9092
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 15
+      start_period: 20s
+
+  migrate:
+    build:
+      context: .
+      dockerfile: migrations/Dockerfile
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-siphon}:${POSTGRES_PASSWORD:-siphon}@postgres:5432/${POSTGRES_DB:-siphon}?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  kafka-init:
+    image: apache/kafka:4.1.1
+    container_name: kafka-init
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint:
+      - /bin/bash
+      - -c
+      - /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic events --partitions 1 --replication-factor 1
+    restart: "no"
+
+  auth-svc:
+    build:
+      context: .
+      dockerfile: cmd/auth-svc/Dockerfile
+    container_name: auth-svc
+    environment:
+      PORT: "5002"
+      DATABASE_URL: postgres://${POSTGRES_USER:-siphon}:${POSTGRES_PASSWORD:-siphon}@postgres:5432/${POSTGRES_DB:-siphon}?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:-secret}
+    ports:
+      - "5002:5002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  ingestion-svc:
+    build:
+      context: .
+      dockerfile: cmd/ingestion-svc/Dockerfile
+    container_name: ingestion-svc
+    environment:
+      PORT: "5003"
+      KAFKA_BROKER: kafka:9092
+      DATABASE_URL: postgres://${POSTGRES_USER:-siphon}:${POSTGRES_PASSWORD:-siphon}@postgres:5432/${POSTGRES_DB:-siphon}?sslmode=disable
+    ports:
+      - "5003:5003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+      migrate:
+        condition: service_completed_successfully
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: cmd/api-gateway/Dockerfile
+    container_name: api-gateway
+    environment:
+      PORT: "5000"
+      AUTH_SVC_URL: http://auth-svc:5002
+      INGESTION_SVC_URL: ingestion-svc:5003
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      REDIS_ADDR: redis:6379
+    ports:
+      - "5000:5000"
+    depends_on:
+      redis:
+        condition: service_healthy
+      auth-svc:
+        condition: service_started
+      ingestion-svc:
+        condition: service_started
+
+  email-svc:
+    build:
+      context: .
+      dockerfile: cmd/email-svc/Dockerfile
+    container_name: email-svc
+    environment:
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      KAFKA_URL: kafka:9092
+      FROM_EMAIL: ${FROM_EMAIL}
+    depends_on:
+      kafka:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+
+volumes:
+  postgres_data:
+  kafka_data:
