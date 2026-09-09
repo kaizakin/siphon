@@ -1,11 +1,16 @@
 package email
 
+// Sender delivers a rendered email. ResendClient and SMTPClient both implement it.
+type Sender interface {
+	Send(to []string, subject string, html string) error
+}
+
 type Service struct {
-	provider  *ResendClient
+	provider  Sender
 	templates *TemplateManager
 }
 
-func NewService(provider *ResendClient, templates *TemplateManager) *Service {
+func NewService(provider Sender, templates *TemplateManager) *Service {
 	return &Service{
 		provider:  provider,
 		templates: templates,

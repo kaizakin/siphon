@@ -14,3 +14,11 @@ func Getenv(key string) string {
 
 	return value
 }
+
+func GetenvDefault(key string, fallback string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+
+	return fallback
+}

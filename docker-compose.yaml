@@ -136,20 +136,32 @@ services:
       ingestion-svc:
         condition: service_started
 
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mailpit
+    ports:
+      - "8025:8025" # web UI to inspect caught emails
+      - "1025:1025" # SMTP
+
   email-svc:
     build:
       context: .
       dockerfile: cmd/email-svc/Dockerfile
     container_name: email-svc
     environment:
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-smtp}
       RESEND_API_KEY: ${RESEND_API_KEY}
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
       KAFKA_URL: kafka:9092
-      FROM_EMAIL: ${FROM_EMAIL}
+      FROM_EMAIL: ${FROM_EMAIL:-test@siphon.local}
     depends_on:
       kafka:
         condition: service_healthy
       kafka-init:
         condition: service_completed_successfully
+      mailpit:
+        condition: service_started
 
 volumes:
   postgres_data:
