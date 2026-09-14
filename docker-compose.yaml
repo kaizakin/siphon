@@ -55,6 +55,7 @@ services:
       start_period: 20s
 
   migrate:
+    image: ghcr.io/kaizakin/siphon-migrate-svc:latest
     build:
       context: .
       dockerfile: migrations/Dockerfile
@@ -78,6 +79,7 @@ services:
     restart: "no"
 
   auth-svc:
+    image: ghcr.io/kaizakin/siphon-auth-svc:latest
     build:
       context: .
       dockerfile: cmd/auth-svc/Dockerfile
@@ -95,6 +97,7 @@ services:
         condition: service_completed_successfully
 
   ingestion-svc:
+    image: ghcr.io/kaizakin/siphon-ingestion-svc:latest
     build:
       context: .
       dockerfile: cmd/ingestion-svc/Dockerfile
@@ -116,6 +119,7 @@ services:
         condition: service_completed_successfully
 
   api-gateway:
+    image: ghcr.io/kaizakin/siphon-api-gateway:latest
     build:
       context: .
       dockerfile: cmd/api-gateway/Dockerfile
@@ -144,6 +148,7 @@ services:
       - "1025:1025" # SMTP
 
   email-svc:
+    image: ghcr.io/kaizakin/siphon-email-svc:latest
     build:
       context: .
       dockerfile: cmd/email-svc/Dockerfile
