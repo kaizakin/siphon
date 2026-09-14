@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://taskfile.dev/schema.json
 
-version: '3'
+version: "3"
 
 vars:
   GREETING: Hello, world!
@@ -101,3 +101,18 @@ tasks:
       - run:ingestion
       - run:gateway
       - run:email
+
+  test:load:events:
+    desc: Run k6 load test for events ingestion via Docker
+    cmds:
+      - docker run --rm -i --network host -v "$(pwd)/loadtest:/loadtest" -e BASE_URL=http://localhost:5000 grafana/k6 run /loadtest/events.js
+
+  test:load:auth:
+    desc: Run k6 load test for auth pipeline via Docker
+    cmds:
+      - docker run --rm -i --network host -v "$(pwd)/loadtest:/loadtest" -e BASE_URL=http://localhost:5000 grafana/k6 run /loadtest/auth.js
+
+  test:load:ratelimit:
+    desc: Run k6 rate limit test via Docker
+    cmds:
+      - docker run --rm -i --network host -v "$(pwd)/loadtest:/loadtest" -e BASE_URL=http://localhost:5000 grafana/k6 run /loadtest/ratelimit.js
